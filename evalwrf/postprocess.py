@@ -10,7 +10,8 @@ from cartopy.io.shapereader import natural_earth
 import pandas as pd
 import geopandas as gpd
 from matplotlib.colors import ListedColormap
-from . import CONFIG
+from .config import CONFIG
+from PIL import Image
 
 radar_cmap = ListedColormap(np.array([[4,233,231],
                     [1,159,244], [3,0,244],
@@ -20,6 +21,55 @@ radar_cmap = ListedColormap(np.array([[4,233,231],
                     [253,0,0], [212,0,0],
                     [188,0,0],[248,0,253],
                     [152,84,198]], np.float32) / 255.0)
+
+
+def update_plot_layout(
+    fig, 
+    image_path=None, 
+    opacity=0.5, 
+    background_color='white', 
+    secondary_background_color='lightgray',
+    font_family='Arial',
+    font_size=12
+):
+    """
+    Update Plotly Express figure layout with background image and colors
+    
+    :param fig: Plotly Express figure
+    :param image_path: Path to background image
+    :param opacity: Image opacity
+    :param background_color: Main background color
+    :param secondary_background_color: Plot area background color
+    :param font_family: Font family to use
+    :param font_size: Base font size    
+    :return: Updated figure
+    """
+    fig.update_layout(
+        paper_bgcolor=background_color,
+        plot_bgcolor=secondary_background_color,
+        font=dict(
+            family=font_family,
+            size=font_size
+        )        
+    )
+    
+    if image_path:
+
+        fig.update_layout(
+            images=[{
+                'source': Image.open(image_path),
+                'xref': 'paper',
+                'yref': 'paper',
+                'x': 0,
+                'y': 1,
+                'sizex': 0.2,
+                'sizey': 0.2,
+                'opacity': opacity,
+                'layer': 'below'
+            }]
+        )
+    
+    return fig
 
 class createAnimation:
     def __init__(self, input_files,output_file):

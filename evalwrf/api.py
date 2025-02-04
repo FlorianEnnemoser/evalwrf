@@ -1,7 +1,7 @@
 from pathlib import Path
 import cdsapi
 from itertools import product
-from typing import Literal, Self
+from typing import Literal, Self, Tuple
 import requests
 import time as t
 from dataclasses import dataclass, field
@@ -323,4 +323,63 @@ class ZAMGAPI:
     def __post_init__(self):
         self.url = "https://dataset.api.hub.geosphere.at"
         self.version = "v1"
-        self.request_url = "/".join([self.url,self.version,self.type,self.mode,self.resource])
+        self.dataset_url = "/".join([self.url,self.version,self.type,self.mode,self.resource])
+        self.output_format = "csv"
+        self.parameters = []
+        self.time = ""
+        self.stationslist = []
+        self.request_url = ""
+
+    def metadata(self) -> str:
+        self.request_url = "/".join([self.dataset_url,"metadata"])
+        self.output_format = "json"
+        return self.request_url
+
+    def parameter(self, *p : str) -> None:
+        self.parameters.extend(p)
+        return None
+    
+    def timeframe(self, start : str = "2024-12-01 00:00:00", end : str = "2024-12-02 00:00:00") -> None:
+        dt_start = pd.to_datetime(start).strftime('%Y-%m-%dT%H:%M:%S.000Z')
+        dt_end = pd.to_datetime(end).strftime('%Y-%m-%dT%H:%M:%S.000Z')
+        self.time = f"start={dt_start}&end={dt_end}&"
+        return None
+
+    def stations(self, *ids : int) -> None:
+        self.stationslist.extend(ids)
+        return None
+
+    def compile(self) -> str:
+        self.parameter_string = "".join([f"parameters={para}&" for para in self.parameters])
+        self.stations_string = "".join([f"station_ids={station}&" for station in self.stationslist])
+        self.output_format = "csv"
+        self.request_url = self.dataset_url + "?" + \
+                           self.parameter_string  + \
+                           self.time + \
+                           self.stations_string + \
+                           f"output_format={self.output_format}"
+        return self.request_url
+    
+    def download(self,filename: str, schwimmflügerl : bool = True):
+        if schwimmflügerl:
+            really_download = input("Start download? [y/n] ")
+            if really_download != "y":
+                raise ValueError("stopped downloading.")
+        
+        self.full_filename = f"{filename.split('.')[0]}.{self.output_format}"
+        response = requests.get(self.request_url)
+        print(response.headers)
+        with open(self.full_filename, "wb") as f:
+            f.write(response.content)
+        print("finished downloading")
+        
+    def load_metadata(self, filename : str = "") -> Tuple[pd.DataFrame,pd.DataFrame]:
+        if not filename:
+            filename = self.full_filename
+        df = pd.read_json(filename ,orient="index").T.drop(columns=["type","mode","title","frequency","response_formats","start_time","end_time","id_type"])
+        self.df_stations = pd.json_normalize(df["stations"])
+        self.df_parameters = pd.json_normalize(df["parameters"]).dropna(how="all",axis="index").dropna(how="all",axis="columns")
+        return self.df_stations, self.df_parameters
+
+    def plot(self):
+        NotImplementedError("...")
