@@ -1,13 +1,17 @@
 from pathlib import Path
 import cdsapi
 from itertools import product
-from typing import Literal, Self, Tuple
+from typing import List, Literal, Optional, Self, Tuple, Union
 import requests
 import time as t
 from dataclasses import dataclass, field
 import pandas as pd
 import numpy as np
 from itertools import product
+
+from tqdm import tqdm
+from evalwrf import geosphere2littler as mf
+import fortranformat as ff
 
 @dataclass
 class BaseAPI:
@@ -315,6 +319,20 @@ class ZAMGAPI:
     """
     https://dataset.api.hub.geosphere.at/v1/docs/getting-started.html
     https://dataset.api.hub.geosphere.at/v1/docs/user-guide/resource.html#resources
+
+    Example:
+    ---------
+    >>> api = ew.ZAMGAPI(type="station",mode="historical",resource="klima-v2-10min")
+    >>> api.metadata()
+    >>> api.download("klima-v2-10min_METADATA.json")
+
+    >>> api.load_metadata("klima-v2-10min_METADATA.json")
+    >>> available_stations = api.get_available_stations("Steiermark") 
+
+    >>> api.parameter(*api.wrf_fdda_properties)
+    >>> api.timeframe(start="2024-06-01 00:00:00", end="2024-06-10 18:00:00")
+    >>> api.stations(*available_stations["id"])
+    >>> api.compile()
     """
     type : Literal["grid","timeseries","station"]
     mode : Literal["historical","current","forecast"]
@@ -329,8 +347,10 @@ class ZAMGAPI:
         self.time = ""
         self.stationslist = []
         self.request_url = ""
+        self.timestamp_format = '%Y-%m-%dT%H:%M:%S.000Z'
 
     def metadata(self) -> str:
+        """sets request_url to metadata for given resource"""
         self.request_url = "/".join([self.dataset_url,"metadata"])
         self.output_format = "json"
         return self.request_url
@@ -340,8 +360,8 @@ class ZAMGAPI:
         return None
     
     def timeframe(self, start : str = "2024-12-01 00:00:00", end : str = "2024-12-02 00:00:00") -> None:
-        dt_start = pd.to_datetime(start).strftime('%Y-%m-%dT%H:%M:%S.000Z')
-        dt_end = pd.to_datetime(end).strftime('%Y-%m-%dT%H:%M:%S.000Z')
+        dt_start = pd.to_datetime(start).strftime(self.timestamp_format)
+        dt_end = pd.to_datetime(end).strftime(self.timestamp_format)
         self.time = f"start={dt_start}&end={dt_end}&"
         return None
 
@@ -374,12 +394,316 @@ class ZAMGAPI:
         print("finished downloading")
         
     def load_metadata(self, filename : str = "") -> Tuple[pd.DataFrame,pd.DataFrame]:
+        """Returns `stations` dataframe and `parameters` dataframe as a tuple"""
         if not filename:
             filename = self.full_filename
-        df = pd.read_json(filename ,orient="index").T.drop(columns=["type","mode","title","frequency","response_formats","start_time","end_time","id_type"])
-        self.df_stations = pd.json_normalize(df["stations"])
+        standard_columns = ["type","mode","title","frequency","response_formats","start_time","end_time","id_type"]
+        df = pd.read_json(filename ,orient="index").T.drop(columns=standard_columns)
+        self.df_stations = pd.json_normalize(df["stations"]).set_index("id")
         self.df_parameters = pd.json_normalize(df["parameters"]).dropna(how="all",axis="index").dropna(how="all",axis="columns")
         return self.df_stations, self.df_parameters
+
+    def get_available_stations(
+        self, 
+        states: Union[str, List[str]],
+        is_active_only : bool = True,
+        expression: Optional[str] = None
+    ) -> pd.DataFrame:
+        """
+        Query stations based on state(s) with optional additional filtering.
+        
+        Parameters:
+        -----------
+        states : str or List[str]
+            Single state or list of states to query
+        expression : str, optional
+            Additional pandas query expression for filtering
+        
+        Returns:
+        --------
+        pd.DataFrame
+            Filtered DataFrame of stations
+        
+        Raises:
+        -------
+        ValueError
+            If any provided state is not in the available states
+        """
+        if isinstance(states, str):
+            states = [states]
+        
+        invalid_states = [s not in self.states for s in states]
+        if any(invalid_states):
+            raise ValueError(f"Invalid states: {invalid_states}")
+        
+        active = "& is_active == True" if is_active_only else ""
+        base_query = f"state in {tuple(states)} {active} & type != 'COMBINED'"
+        
+        if expression:
+            full_query = f"{base_query} & {expression}"
+        else:
+            full_query = base_query
+
+        return self.df_stations.query(full_query)
+    
+    def convert2wrf(self, filename : str | None = None, metadata_file : str | None = None, outputfile : str | None = None) -> pd.DataFrame:
+        if not filename:
+            filename = self.full_filename
+
+        if metadata_file:
+            self.load_metadata(metadata_file)
+
+        df = self._converter(filename)
+
+
+    def _converter(self, filename : str) -> pd.DataFrame:
+        zamg_mapping = {
+            "ff":"Wind", #wind
+            "dd":"Wind direction", #windrichtung
+            "tl":"2m Temperature", #lufttemp
+            "rf":"Relative Humidity", #relative feuchte
+            "p":"Surface Pressure",  #luftdruck
+            "pred":"SLP Pressure",
+            "rr":"Precipitation (mm)"  #regen
+        }
+
+        df = pd.read_csv(filename)
+        df["time"] = pd.to_datetime(df["time"])
+        df = df.sort_values(by="time",ignore_index=True)
+        df = df.rename(columns={"station":"ID"})
+
+        df["Name"] = df["ID"].map(self.df_stations["name"])
+        df["Elevation"] = df["ID"].map(self.df_stations["altitude"])
+        df["Latitude"] = df["ID"].map(self.df_stations["lat"])
+        df["Longitude"] = df["ID"].map(self.df_stations["lon"])
+
+        df["Saturation_Vapor_Density"] = mf.saturation_vapor_density(df["tl"])
+        df["Humidity"] = df["Saturation_Vapor_Density"] * df["rf"] / 100
+
+        df["t2m_K"] = df["tl"] + 273.15
+        df["u"] = mf.u_from_vector(df["ff"],df["dd"])
+        df["v"] = mf.v_from_vector(df["ff"],df["dd"])
+        df["pred"] = np.where(df["pred"].isna(),mf.slp_from_station_pressure(df["p"],df["Elevation"]+2,df["t2m_K"]),df["pred"])
+
+        df = df.rename(columns=zamg_mapping)
+
+        df["FM-Code"] = "FM-12" # FM-35 oder FM-12 idk https://www2.mmm.ucar.edu/wrf/users/wrfda/OnlineTutorial/Help/littler.html#FM
+        df["Source"] = "Geosphere Austria"
+        df["Sequence number"] = df.index[::-1]
+        df["Bogus"] = False
+        # df["Discard"] = False
+        # df["Unix Time"] = df["time"].astype(int) / 10**9
+        # df["Julian day"] = df["time"].apply(lambda t: t.to_julian_date()).astype(int)
+        df["Date string"] = df["time"].dt.strftime('%Y%m%d%H%M%S')
+        return df
+
+    def _create_obs(self, df,output_file):
+        with open(output_file, 'w') as f:
+            for index, row in df.iterrows():
+                timestamp_str = row['time']
+                dt = pd.to_datetime(timestamp_str)
+                timestamp_formatted = dt.strftime('%Y%m%d%H%M%S')
+                latitude = row['Latitude']
+                longitude = row['Longitude']
+                station_name = row['Name']
+                elevation = row['Elevation']
+
+                wind_speed = row['Wind'] if pd.notna(row['Wind']) else -888888.0
+                wind_direction = row['Wind direction'] if pd.notna(row['Wind direction']) else -888888.0
+                temperature = row['2m Temperature'] if pd.notna(row['2m Temperature']) else -888888.0
+                relative_humidity = row['Relative Humidity'] if pd.notna(row['Relative Humidity']) else -888888.0
+                pressure = row['SFC Pressure'] if pd.notna(row['SFC Pressure']) else -888888.0
+                precipitation = row['Precipitation (mm)'] if pd.notna(row['Precipitation (mm)']) else -888888.0
+
+
+                f.write(f"{timestamp_formatted}\n")
+                f.write(f" {latitude:12.6f} {longitude:10.6f}\n")
+                f.write(f"  {station_name:<40} CLASS DA NOAA SURFACE STATION          \n") # Adjusted station name formatting
+                f.write(f"  FM-18             SONDE OBS ST          {elevation:10.1f}     T     F      1\n")
+                f.write(f" {-888888.000:12.3f} {0.000:10.3f} {elevation:10.3f} {wind_direction:10.3f} {-888888.000:12.3f} {0.000:10.3f} {temperature:10.3f} {0.000:10.3f} {relative_humidity:10.3f} {0.000:10.3f} {-888888.000:12.3f} {0.000:10.3f}\n")
+
+        print(f"OBS_DOMAIN file saved to: {output_file}")        
+
+
+    def dataframe_to_obs_domain(self,filename : str,output_filepath = "lols",
+                                lat_col='latitude', lon_col='longitude', level_col='level',
+                                var_col='variable', value_col='value', error_col='error',
+                                datetime_col='datetime', station_id_col='station_id',
+                                data_type_col='data_type', platform_col='platform',
+                                source_col='source', is_sound=False, bogus=False):
+        """
+        https://www2.mmm.ucar.edu/wrf/users/docs/ObsNudgingGuide.pdf
+        https://www2.mmm.ucar.edu/wrf/users/wrfda/OnlineTutorial/Help/littler.html#FM
+
+        Converts a Pandas DataFrame to the OBS_DOMAIN format for WRF ObsNudging as described
+        in the WRF Observation Nudging Guide.
+
+        Args:
+            df (pd.DataFrame): Input DataFrame containing observation data.
+                            Required columns (names are customizable via arguments):
+                            - Latitude
+                            - Longitude
+                            - Level (elevation for surface obs, pressure level for sounding)
+                            - Variable (variable name - should map to OBS_DOMAIN names)
+                            - Value (observation value)
+                            - Error (observation error estimate - not used in OBS_DOMAIN format directly, QC flags are used)
+                            - Datetime (timestamp of the observation)
+                            - station_id (Station ID)
+                            - data_type (Data type)
+                            - platform (Platform name)
+                            - source (Source of ob)
+
+            output_filepath (str): Path to the output OBS_DOMAIN file.
+            lat_col (str, optional): Name of the latitude column. Defaults to 'latitude'.
+            lon_col (str, optional): Name of the longitude column. Defaults to 'longitude'.
+            level_col (str, optional): Name of the level/elevation column. Defaults to 'level'.
+            var_col (str, optional): Name of the variable name column. Defaults to 'variable'.
+            value_col (str, optional): Name of the observation value column. Defaults to 'value'.
+            error_col (str, optional): Name of the error estimate column (not directly used in OBS_DOMAIN). Defaults to 'error'.
+            datetime_col (str, optional): Name of the datetime column. Defaults to 'datetime'.
+            station_id_col (str, optional): Name of the station ID column. Defaults to 'station_id'.
+            data_type_col (str, optional): Name of the data type column. Defaults to 'data_type'.
+            platform_col (str, optional): Name of the platform name column. Defaults to 'platform'.
+            source_col (str, optional): Name of the source column. Defaults to 'source'.
+            is_sound (bool, optional): Set to True if the observation is a sounding (non-surface). Defaults to False (surface).
+            bogus (bool, optional): Set to True if the observation is a bogus observation. Defaults to False.
+
+        Raises:
+            ValueError: If required columns are missing.
+            KeyError: If specified column names are not found in the DataFrame.
+
+        Returns:
+            None. Writes the OBS_DOMAIN formatted data to the output_filepath.
+
+        Example DataFrame structure for SURFACE observations:
+        ```
+            latitude  longitude  level    station_id data_type      platform source             datetime    temperature_data  u_met_data  v_met_data  rh_data  psfc_data
+        0    35.27     -113.95     1033       KIGM    NETWORK   FM-15 ASOS   None  2012-02-07 08:48:00             277.15      -4.077       2.194   35.343   90063.531
+        ```
+
+        Example DataFrame structure for SOUNDING observations:
+        ```
+            latitude  longitude  level    station_id data_type      platform source             datetime    pressure_data  height_data  temperature_data  u_met_data  v_met_data  rh_data
+        0    37.76     -122.22       6        KOAK    NETWORK        FM-35   None  2012-02-07 12:00:00         100800.0           6.0            284.75      -2.939       0.943   80.004
+        1    37.76     -122.22      70        KOAK    NETWORK        FM-35   None  2012-02-07 12:00:00         100000.0          70.0            284.95      -3.725       2.611   75.761
+        2    37.76     -122.22     170.522     KOAK    NETWORK        FM-35   None  2012-02-07 12:00:00          98800.0         170.522         285.114      -4.904       5.114   68.341
+        ```
+        """
+        df = self._converter(filename)
+        df["ID"] = df["ID"].astype(str)
+        #ensure chronological order:
+        df = df.sort_values(by="time",ignore_index=True)
+        
+        is_sound_char = "F"
+        
+        # For surface obs, meas_count is 1, for soundings, it's the number of levels in the sounding (assuming each row is a level for sounding)
+        if not is_sound:
+            meas_count = 1
+        else:
+            meas_count = len(df)
+            raise NotImplementedError("sounding is not implemented")
+
+        for i, row in tqdm(df.iterrows(),desc="Creating rows",ascii=True,unit=" rows",total=len(df.index)):
+
+            print(row)
+            print(f" {row['Date string']:14}\n",end="") #datechar
+            print((f"  {row['Latitude']:9.4f} {row['Longitude']:9.4f}\n"),end="")  #latlon
+            print(f"  {row['ID'].ljust(40)}   {row['Name'].ljust(40)}   \n",end="") #line 3
+            print(f"  {row['FM-Code']:16}   {row['Source']:16}   {row['Elevation']:8.0f}   {is_sound_char:4}   {row['Bogus']:4}   {meas_count:5d}\n",end="")
+            surface_data_line_values = [
+                    f"{row['slp_data']:11.3f}", f"{row['slp_data_qc']:11.3f}",
+                    f"{row['ref_pres_data']:11.3f}", f"{row['ref_pres_data_qc']:11.3f}",
+                    f"{row['height_data']:11.3f}", f"{row['height_data_qc']:11.3f}",
+                    f"{row['temperature_data']:11.3f}", f"{row['temperature_data_qc']:11.3f}",
+                    f"{row['u_met_data']:11.3f}", f"{row['u_met_data_qc']:11.3f}",
+                    f"{row['v_met_data']:11.3f}", f"{row['v_met_data_qc']:11.3f}",
+                    f"{row['rh_data']:11.3f}", f"{row['rh_data_qc']:11.3f}",
+                    f"{row['psfc_data']:11.3f}", f"{row['psfc_data_qc']:11.3f}",
+                    f"{row['precip_data']:11.3f}", f"{row['precip_data_qc']:11.3f}"
+                ]
+            print(" " + " ".join(surface_data_line_values) + "\n",end="")
+            raise
+
+        raise
+        with open(output_filepath, 'w') as outfile:
+
+            for index, row in df.iterrows():
+                # Line 1: Date/time string
+                outfile.write(f" {date_char:14}\n")
+
+                # Line 2: Latitude, Longitude
+                outfile.write(f"  {row[lat_col]:9.4f} {row[lon_col]:9.4f}\n")
+
+                # Line 3: Station ID, Data type
+                outfile.write(f"  {row[station_id_col]:40}   {row[data_type_col]:40}   \n")
+
+                # Line 4: Platform name, Source of ob, Terrain height, is_sound, bogus, meas_count
+                is_sound_char = 'T' if is_sound else 'F'
+                bogus_char = 'T' if bogus else 'F'
+                outfile.write(f"  {row[platform_col]:16}   {row[source_col]:16}   {row[level_col]:8.0f}   {is_sound_char:4}   {bogus_char:4}   {meas_count:5d}\n")
+
+                # Data Lines (Surface or Sounding)
+                
+                # Initialize with missing values (-888888.000) and QC flags (0.000)
+                surface_vars = {
+                    'slp_data': -888888.000, 'slp_data_qc': 0.000,
+                    'ref_pres_data': -888888.000, 'ref_pres_data_qc': 0.000,
+                    'height_data': -888888.000, 'height_data_qc': 0.000,
+                    'temperature_data': -888888.000, 'temperature_data_qc': 0.000,
+                    'u_met_data': -888888.000, 'u_met_data_qc': 0.000,
+                    'v_met_data': -888888.000, 'v_met_data_qc': 0.000,
+                    'rh_data': -888888.000, 'rh_data_qc': 0.000,
+                    'psfc_data': -888888.000, 'psfc_data_qc': 0.000,
+                    'precip_data': -888888.000, 'precip_data_qc': 0.000
+                }
+
+                # Fill in values from DataFrame if available
+                for var_name_base in ['slp', 'ref_pres', 'height', 'temperature', 'u_met', 'v_met', 'rh', 'psfc', 'precip']:
+                    data_col_name = f'{var_name_base}_data'
+                    if data_col_name in row and pd.notna(row[data_col_name]):
+                        surface_vars[data_col_name] = row[data_col_name]
+
+                # Special case for surface height using level_col
+                surface_vars['height_data'] = row.get(level_col, surface_vars['height_data']) # Use .get() with default
+
+                surface_data_line_values = [
+                    f"{surface_vars['slp_data']:11.3f}", f"{surface_vars['slp_data_qc']:11.3f}",
+                    f"{surface_vars['ref_pres_data']:11.3f}", f"{surface_vars['ref_pres_data_qc']:11.3f}",
+                    f"{surface_vars['height_data']:11.3f}", f"{surface_vars['height_data_qc']:11.3f}",
+                    f"{surface_vars['temperature_data']:11.3f}", f"{surface_vars['temperature_data_qc']:11.3f}",
+                    f"{surface_vars['u_met_data']:11.3f}", f"{surface_vars['u_met_data_qc']:11.3f}",
+                    f"{surface_vars['v_met_data']:11.3f}", f"{surface_vars['v_met_data_qc']:11.3f}",
+                    f"{surface_vars['rh_data']:11.3f}", f"{surface_vars['rh_data_qc']:11.3f}",
+                    f"{surface_vars['psfc_data']:11.3f}", f"{surface_vars['psfc_data_qc']:11.3f}",
+                    f"{surface_vars['precip_data']:11.3f}", f"{surface_vars['precip_data_qc']:11.3f}"
+                ]
+                outfile.write(" " + " ".join(surface_data_line_values) + "\n")
+
+        print(f"OBS_DOMAIN file written to: {output_filepath}")
+
+    def save_littleR(self, output_file : str):
+        """
+        Convert DataFrame to little_r format and save to file
+        
+        Parameters:
+        -----------
+        output_file (str): Output file path
+        """
+        with open(output_file, 'w') as f:
+            f.write(self.little_r_output)
+
+
+    @property
+    def states(self) -> list:
+        return self.df_stations["state"].unique()
+
+    @property
+    def wrf_fdda_properties(self) -> list:
+        return ["ff","dd","tl","rf","p","pred","rr"]
+
+    @property
+    def available_parameters(self) -> pd.DataFrame:
+        return self.df_parameters.query("~name.str.contains('flag')")
 
     def plot(self):
         NotImplementedError("...")
