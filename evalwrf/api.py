@@ -466,13 +466,20 @@ class ZAMGAPI:
             "pred":"SLP Pressure",
             "rr":"Precipitation (mm)"  #regen
         }
-
+        MISSING_CHAR = -888888
         df = pd.read_csv(filename)
         df["time"] = pd.to_datetime(df["time"])
         df = df.sort_values(by="time",ignore_index=True)
         df = df.rename(columns={"station":"ID"})
 
         df["Name"] = df["ID"].map(self.df_stations["name"])
+        df['Name'] = df['Name'].str.replace('ä', 'ae')
+        df['Name'] = df['Name'].str.replace('ö', 'oe')
+        df['Name'] = df['Name'].str.replace('ü', 'ue')
+        df['Name'] = df['Name'].str.replace('Ä', 'Ae')
+        df['Name'] = df['Name'].str.replace('Ö', 'Oe')
+        df['Name'] = df['Name'].str.replace('Ü', 'Ue')
+
         df["Elevation"] = df["ID"].map(self.df_stations["altitude"])
         df["Latitude"] = df["ID"].map(self.df_stations["lat"])
         df["Longitude"] = df["ID"].map(self.df_stations["lon"])
@@ -490,8 +497,8 @@ class ZAMGAPI:
         df["FM-Code"] = "FM-12" # FM-35 oder FM-12 idk https://www2.mmm.ucar.edu/wrf/users/wrfda/OnlineTutorial/Help/littler.html#FM
         df["Source"] = "Geosphere Austria"
         df["Sequence number"] = df.index[::-1]
-        df["Bogus"] = False
-        # df["Discard"] = False
+        df["Bogus"] = "F"
+        df["ref_pres"] = MISSING_CHAR
         # df["Unix Time"] = df["time"].astype(int) / 10**9
         # df["Julian day"] = df["time"].apply(lambda t: t.to_julian_date()).astype(int)
         df["Date string"] = df["time"].dt.strftime('%Y%m%d%H%M%S')
@@ -525,173 +532,50 @@ class ZAMGAPI:
         print(f"OBS_DOMAIN file saved to: {output_file}")        
 
 
-    def dataframe_to_obs_domain(self,filename : str,output_filepath = "lols",
-                                lat_col='latitude', lon_col='longitude', level_col='level',
-                                var_col='variable', value_col='value', error_col='error',
-                                datetime_col='datetime', station_id_col='station_id',
-                                data_type_col='data_type', platform_col='platform',
-                                source_col='source', is_sound=False, bogus=False):
+    def dataframe_to_obs_domain(self,filename : str, domain_number : int, output_filepath = "OBS_DOMAIN", is_sound=False):
         """
         https://www2.mmm.ucar.edu/wrf/users/docs/ObsNudgingGuide.pdf
         https://www2.mmm.ucar.edu/wrf/users/wrfda/OnlineTutorial/Help/littler.html#FM
 
         Converts a Pandas DataFrame to the OBS_DOMAIN format for WRF ObsNudging as described
         in the WRF Observation Nudging Guide.
-
-        Args:
-            df (pd.DataFrame): Input DataFrame containing observation data.
-                            Required columns (names are customizable via arguments):
-                            - Latitude
-                            - Longitude
-                            - Level (elevation for surface obs, pressure level for sounding)
-                            - Variable (variable name - should map to OBS_DOMAIN names)
-                            - Value (observation value)
-                            - Error (observation error estimate - not used in OBS_DOMAIN format directly, QC flags are used)
-                            - Datetime (timestamp of the observation)
-                            - station_id (Station ID)
-                            - data_type (Data type)
-                            - platform (Platform name)
-                            - source (Source of ob)
-
-            output_filepath (str): Path to the output OBS_DOMAIN file.
-            lat_col (str, optional): Name of the latitude column. Defaults to 'latitude'.
-            lon_col (str, optional): Name of the longitude column. Defaults to 'longitude'.
-            level_col (str, optional): Name of the level/elevation column. Defaults to 'level'.
-            var_col (str, optional): Name of the variable name column. Defaults to 'variable'.
-            value_col (str, optional): Name of the observation value column. Defaults to 'value'.
-            error_col (str, optional): Name of the error estimate column (not directly used in OBS_DOMAIN). Defaults to 'error'.
-            datetime_col (str, optional): Name of the datetime column. Defaults to 'datetime'.
-            station_id_col (str, optional): Name of the station ID column. Defaults to 'station_id'.
-            data_type_col (str, optional): Name of the data type column. Defaults to 'data_type'.
-            platform_col (str, optional): Name of the platform name column. Defaults to 'platform'.
-            source_col (str, optional): Name of the source column. Defaults to 'source'.
-            is_sound (bool, optional): Set to True if the observation is a sounding (non-surface). Defaults to False (surface).
-            bogus (bool, optional): Set to True if the observation is a bogus observation. Defaults to False.
-
-        Raises:
-            ValueError: If required columns are missing.
-            KeyError: If specified column names are not found in the DataFrame.
-
-        Returns:
-            None. Writes the OBS_DOMAIN formatted data to the output_filepath.
-
-        Example DataFrame structure for SURFACE observations:
-        ```
-            latitude  longitude  level    station_id data_type      platform source             datetime    temperature_data  u_met_data  v_met_data  rh_data  psfc_data
-        0    35.27     -113.95     1033       KIGM    NETWORK   FM-15 ASOS   None  2012-02-07 08:48:00             277.15      -4.077       2.194   35.343   90063.531
-        ```
-
-        Example DataFrame structure for SOUNDING observations:
-        ```
-            latitude  longitude  level    station_id data_type      platform source             datetime    pressure_data  height_data  temperature_data  u_met_data  v_met_data  rh_data
-        0    37.76     -122.22       6        KOAK    NETWORK        FM-35   None  2012-02-07 12:00:00         100800.0           6.0            284.75      -2.939       0.943   80.004
-        1    37.76     -122.22      70        KOAK    NETWORK        FM-35   None  2012-02-07 12:00:00         100000.0          70.0            284.95      -3.725       2.611   75.761
-        2    37.76     -122.22     170.522     KOAK    NETWORK        FM-35   None  2012-02-07 12:00:00          98800.0         170.522         285.114      -4.904       5.114   68.341
-        ```
         """
         df = self._converter(filename)
         df["ID"] = df["ID"].astype(str)
+        
         #ensure chronological order:
         df = df.sort_values(by="time",ignore_index=True)
         
         is_sound_char = "F"
-        
+        QC_char = 0
         # For surface obs, meas_count is 1, for soundings, it's the number of levels in the sounding (assuming each row is a level for sounding)
         if not is_sound:
             meas_count = 1
         else:
             meas_count = len(df)
             raise NotImplementedError("sounding is not implemented")
-
-        for i, row in tqdm(df.iterrows(),desc="Creating rows",ascii=True,unit=" rows",total=len(df.index)):
-
-            print(row)
-            print(f" {row['Date string']:14}\n",end="") #datechar
-            print((f"  {row['Latitude']:9.4f} {row['Longitude']:9.4f}\n"),end="")  #latlon
-            print(f"  {row['ID'].ljust(40)}   {row['Name'].ljust(40)}   \n",end="") #line 3
-            print(f"  {row['FM-Code']:16}   {row['Source']:16}   {row['Elevation']:8.0f}   {is_sound_char:4}   {row['Bogus']:4}   {meas_count:5d}\n",end="")
-            surface_data_line_values = [
-                    f"{row['slp_data']:11.3f}", f"{row['slp_data_qc']:11.3f}",
-                    f"{row['ref_pres_data']:11.3f}", f"{row['ref_pres_data_qc']:11.3f}",
-                    f"{row['height_data']:11.3f}", f"{row['height_data_qc']:11.3f}",
-                    f"{row['temperature_data']:11.3f}", f"{row['temperature_data_qc']:11.3f}",
-                    f"{row['u_met_data']:11.3f}", f"{row['u_met_data_qc']:11.3f}",
-                    f"{row['v_met_data']:11.3f}", f"{row['v_met_data_qc']:11.3f}",
-                    f"{row['rh_data']:11.3f}", f"{row['rh_data_qc']:11.3f}",
-                    f"{row['psfc_data']:11.3f}", f"{row['psfc_data_qc']:11.3f}",
-                    f"{row['precip_data']:11.3f}", f"{row['precip_data_qc']:11.3f}"
-                ]
-            print(" " + " ".join(surface_data_line_values) + "\n",end="")
-            raise
-
-        raise
-        with open(output_filepath, 'w') as outfile:
-
-            for index, row in df.iterrows():
-                # Line 1: Date/time string
-                outfile.write(f" {date_char:14}\n")
-
-                # Line 2: Latitude, Longitude
-                outfile.write(f"  {row[lat_col]:9.4f} {row[lon_col]:9.4f}\n")
-
-                # Line 3: Station ID, Data type
-                outfile.write(f"  {row[station_id_col]:40}   {row[data_type_col]:40}   \n")
-
-                # Line 4: Platform name, Source of ob, Terrain height, is_sound, bogus, meas_count
-                is_sound_char = 'T' if is_sound else 'F'
-                bogus_char = 'T' if bogus else 'F'
-                outfile.write(f"  {row[platform_col]:16}   {row[source_col]:16}   {row[level_col]:8.0f}   {is_sound_char:4}   {bogus_char:4}   {meas_count:5d}\n")
-
-                # Data Lines (Surface or Sounding)
-                
-                # Initialize with missing values (-888888.000) and QC flags (0.000)
-                surface_vars = {
-                    'slp_data': -888888.000, 'slp_data_qc': 0.000,
-                    'ref_pres_data': -888888.000, 'ref_pres_data_qc': 0.000,
-                    'height_data': -888888.000, 'height_data_qc': 0.000,
-                    'temperature_data': -888888.000, 'temperature_data_qc': 0.000,
-                    'u_met_data': -888888.000, 'u_met_data_qc': 0.000,
-                    'v_met_data': -888888.000, 'v_met_data_qc': 0.000,
-                    'rh_data': -888888.000, 'rh_data_qc': 0.000,
-                    'psfc_data': -888888.000, 'psfc_data_qc': 0.000,
-                    'precip_data': -888888.000, 'precip_data_qc': 0.000
-                }
-
-                # Fill in values from DataFrame if available
-                for var_name_base in ['slp', 'ref_pres', 'height', 'temperature', 'u_met', 'v_met', 'rh', 'psfc', 'precip']:
-                    data_col_name = f'{var_name_base}_data'
-                    if data_col_name in row and pd.notna(row[data_col_name]):
-                        surface_vars[data_col_name] = row[data_col_name]
-
-                # Special case for surface height using level_col
-                surface_vars['height_data'] = row.get(level_col, surface_vars['height_data']) # Use .get() with default
-
-                surface_data_line_values = [
-                    f"{surface_vars['slp_data']:11.3f}", f"{surface_vars['slp_data_qc']:11.3f}",
-                    f"{surface_vars['ref_pres_data']:11.3f}", f"{surface_vars['ref_pres_data_qc']:11.3f}",
-                    f"{surface_vars['height_data']:11.3f}", f"{surface_vars['height_data_qc']:11.3f}",
-                    f"{surface_vars['temperature_data']:11.3f}", f"{surface_vars['temperature_data_qc']:11.3f}",
-                    f"{surface_vars['u_met_data']:11.3f}", f"{surface_vars['u_met_data_qc']:11.3f}",
-                    f"{surface_vars['v_met_data']:11.3f}", f"{surface_vars['v_met_data_qc']:11.3f}",
-                    f"{surface_vars['rh_data']:11.3f}", f"{surface_vars['rh_data_qc']:11.3f}",
-                    f"{surface_vars['psfc_data']:11.3f}", f"{surface_vars['psfc_data_qc']:11.3f}",
-                    f"{surface_vars['precip_data']:11.3f}", f"{surface_vars['precip_data_qc']:11.3f}"
-                ]
-                outfile.write(" " + " ".join(surface_data_line_values) + "\n")
-
-        print(f"OBS_DOMAIN file written to: {output_filepath}")
-
-    def save_littleR(self, output_file : str):
-        """
-        Convert DataFrame to little_r format and save to file
         
-        Parameters:
-        -----------
-        output_file (str): Output file path
-        """
-        with open(output_file, 'w') as f:
-            f.write(self.little_r_output)
-
+        OUTFILE = f"{output_filepath}{domain_number}01"
+        with open(OUTFILE, 'w') as outfile:
+            for _, row in tqdm(df.iterrows(),desc="Creating rows",ascii=True,unit=" rows",total=len(df.index)):
+                outfile.write(f" {row['Date string']:14}\n")
+                outfile.write((f"  {row['Latitude']:9.4f} {row['Longitude']:9.4f}\n"))  #latlon
+                outfile.write(f"  {row['ID'].ljust(40)}   {row['Name'].ljust(40)}   \n") #line 3
+                outfile.write(f"  {row['FM-Code']:16}   {row['Source']:16}   {row['Elevation']:8.0f}   {is_sound_char:4}   {row['Bogus']:4}   {meas_count:5d}\n")
+                surface_data_line_values = [
+                        f"{row['SLP Pressure']:11.3f}", f"{QC_char:11.3f}",
+                        f"{row['ref_pres']:11.3f}", f"{row['ref_pres']:11.3f}",
+                        f"{row['Elevation']:11.3f}", f"{QC_char:11.3f}",
+                        f"{row['t2m_K']:11.3f}", f"{QC_char:11.3f}",
+                        f"{row['u']:11.3f}", f"{QC_char:11.3f}",
+                        f"{row['v']:11.3f}", f"{QC_char:11.3f}",
+                        f"{row['Relative Humidity']:11.3f}", f"{QC_char:11.3f}",
+                        f"{row['Surface Pressure']:11.3f}", f"{QC_char:11.3f}"
+                        f"{row['Precipitation (mm)']:11.3f}", f"{QC_char:11.3f}"
+                    ]
+                outfile.write(" " + " ".join(surface_data_line_values) + "\n")
+        print(f"OBS_DOMAIN file written to: {OUTFILE}")
+        return None
 
     @property
     def states(self) -> list:
