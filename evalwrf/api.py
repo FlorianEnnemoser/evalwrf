@@ -8,10 +8,8 @@ from dataclasses import dataclass, field
 import pandas as pd
 import numpy as np
 from itertools import product
-
 from tqdm import tqdm
-from evalwrf import geosphere2littler as mf
-import fortranformat as ff
+from . import mathfuncs as mf
 
 @dataclass
 class BaseAPI:
@@ -446,16 +444,6 @@ class ZAMGAPI:
 
         return self.df_stations.query(full_query)
     
-    def convert2wrf(self, filename : str | None = None, metadata_file : str | None = None, outputfile : str | None = None) -> pd.DataFrame:
-        if not filename:
-            filename = self.full_filename
-
-        if metadata_file:
-            self.load_metadata(metadata_file)
-
-        df = self._converter(filename)
-
-
     def _converter(self, filename : str) -> pd.DataFrame:
         zamg_mapping = {
             "ff":"Wind", #wind
@@ -503,34 +491,6 @@ class ZAMGAPI:
         # df["Julian day"] = df["time"].apply(lambda t: t.to_julian_date()).astype(int)
         df["Date string"] = df["time"].dt.strftime('%Y%m%d%H%M%S')
         return df
-
-    def _create_obs(self, df,output_file):
-        with open(output_file, 'w') as f:
-            for index, row in df.iterrows():
-                timestamp_str = row['time']
-                dt = pd.to_datetime(timestamp_str)
-                timestamp_formatted = dt.strftime('%Y%m%d%H%M%S')
-                latitude = row['Latitude']
-                longitude = row['Longitude']
-                station_name = row['Name']
-                elevation = row['Elevation']
-
-                wind_speed = row['Wind'] if pd.notna(row['Wind']) else -888888.0
-                wind_direction = row['Wind direction'] if pd.notna(row['Wind direction']) else -888888.0
-                temperature = row['2m Temperature'] if pd.notna(row['2m Temperature']) else -888888.0
-                relative_humidity = row['Relative Humidity'] if pd.notna(row['Relative Humidity']) else -888888.0
-                pressure = row['SFC Pressure'] if pd.notna(row['SFC Pressure']) else -888888.0
-                precipitation = row['Precipitation (mm)'] if pd.notna(row['Precipitation (mm)']) else -888888.0
-
-
-                f.write(f"{timestamp_formatted}\n")
-                f.write(f" {latitude:12.6f} {longitude:10.6f}\n")
-                f.write(f"  {station_name:<40} CLASS DA NOAA SURFACE STATION          \n") # Adjusted station name formatting
-                f.write(f"  FM-18             SONDE OBS ST          {elevation:10.1f}     T     F      1\n")
-                f.write(f" {-888888.000:12.3f} {0.000:10.3f} {elevation:10.3f} {wind_direction:10.3f} {-888888.000:12.3f} {0.000:10.3f} {temperature:10.3f} {0.000:10.3f} {relative_humidity:10.3f} {0.000:10.3f} {-888888.000:12.3f} {0.000:10.3f}\n")
-
-        print(f"OBS_DOMAIN file saved to: {output_file}")        
-
 
     def to_obsdomain(self,filename : str, domain_number : int, output_filepath = "OBS_DOMAIN", is_sound=False):
         """

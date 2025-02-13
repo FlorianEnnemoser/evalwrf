@@ -5,6 +5,8 @@ from dataclasses import dataclass
 
 @dataclass
 class Consts:
+    """Physical constants used for calculation."""
+
     R : float = 8.314462618
     """Molar Gas Constant"""
 
@@ -16,8 +18,6 @@ class Consts:
 
     Rd : float = R / Md  
     """Dry Air Gas Constant"""
-
-
 
 def saturation_water_vapor_pressure(T : float) -> float:
     """

@@ -751,16 +751,6 @@ unicode = ["unicodedata2 (>=15.1.0)"]
 woff = ["brotli (>=1.0.1)", "brotlicffi (>=0.8.0)", "zopfli (>=0.1.4)"]
 
 [[package]]
-name = "fortranformat"
-version = "2.0.0"
-description = "Mimics Fortran textual IO in Python"
-optional = false
-python-versions = "*"
-files = [
-    {file = "fortranformat-2.0.0.tar.gz", hash = "sha256:52473831d6f6bad7c2de0f26ad51856ea5d0ef097bcba5af3b855b871b815b0d"},
-]
-
-[[package]]
 name = "fqdn"
 version = "1.5.1"
 description = "Validates fully-qualified domain names against RFC 1123, so that they are acceptable to modern bowsers"
@@ -3021,4 +3011,4 @@ viz = ["cartopy", "matplotlib", "nc-time-axis", "seaborn"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "36bc880ac5ecfd9eb30066c2512d6b38d09d549900de07c245f1c530bfa32787"
+content-hash = "5dfd2e91f63f67a2a9a1c37ef22e84a7a41b99fe42f124c6008513c6aa57424b"
