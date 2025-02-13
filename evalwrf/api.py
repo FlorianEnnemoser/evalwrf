@@ -478,8 +478,8 @@ class ZAMGAPI:
         df["t2m_K"] = df["tl"] + 273.15
         df["u"] = mf.u_from_vector(df["ff"],df["dd"])
         df["v"] = mf.v_from_vector(df["ff"],df["dd"])
-        df["pred"] = np.where(df["pred"].isna(),mf.slp_from_station_pressure(df["p"],df["Elevation"]+2,df["t2m_K"]),df["pred"])
-
+        df["pred"] = np.where(df["pred"].isna(),mf.slp_from_station_pressure(df["p"],df["Elevation"]+2,df["t2m_K"]),df["pred"]) *100
+        df["p"] *= 100
         df = df.rename(columns=zamg_mapping)
 
         df["FM-Code"] = "FM-12" # FM-35 oder FM-12 idk https://www2.mmm.ucar.edu/wrf/users/wrfda/OnlineTutorial/Help/littler.html#FM
@@ -604,7 +604,7 @@ class ZAMGAPI:
                 outfile.write(f" {row['Date string']:14}\n")
                 outfile.write((f"  {row['Latitude']:9.4f} {row['Longitude']:9.4f}\n"))  #latlon
                 outfile.write(f"  {row['ID'].ljust(40)}   {row['Name'].ljust(40)}   \n") #line 3
-                outfile.write(f"  {row['FM-Code']:16}   {row['Source']:16}   {row['Elevation']:8.0f}   {is_sound_char:4}   {row['Bogus']:4}   {meas_count:5d}\n")
+                outfile.write(f"  {row['FM-Code']:16}  {row['Source']:16}  {row['Elevation']:8.0f}.  {is_sound_char.rjust(4)}  {row['Bogus'].rjust(4)}  {meas_count:5d}\n")
                 surface_data_line_values = [
                         f"{row['SLP Pressure']:11.3f}", f"{QC_char:11.3f}",
                         f"{row['ref_pres']:11.3f}", f"{row['ref_pres']:11.3f}",
@@ -616,7 +616,7 @@ class ZAMGAPI:
                         f"{row['Surface Pressure']:11.3f}", f"{QC_char:11.3f}"
                         f"{row['Precipitation (mm)']:11.3f}", f"{QC_char:11.3f}"
                     ]
-                outfile.write(" " + " ".join(surface_data_line_values) + "\n")
+                outfile.write(" ".join(surface_data_line_values) + "\n")
         print(f"OBS_DOMAIN file written to: {OUTFILE}")
         return None
 
