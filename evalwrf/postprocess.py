@@ -1,6 +1,6 @@
 import glob
 import os
-from typing import Optional
+from typing import List, Optional
 import matplotlib.pyplot as plt
 import xarray as xr
 import numpy as np
@@ -8,7 +8,6 @@ from pathlib import Path
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from cartopy.io.shapereader import natural_earth
-import pandas as pd
 import geopandas as gpd
 from matplotlib.colors import ListedColormap
 from .config import CONFIG
@@ -170,7 +169,7 @@ def load_files(files : list, dim : str = "Time") -> xr.Dataset:
     return xr.concat([xr.load_dataset(f) for f in files],dim=dim)
 
 def plotting_simple(dataarray : xr.DataArray,
-                    levels : int | list[int] = 11, 
+                    levels : int | List[int] = 11, 
                     cmap : str = "jet", 
                     title : str = "",
                     cbartitle : str = "",
