@@ -1,5 +1,4 @@
 from .api import GFSAPI, ERA5API, ZAMGAPI
-from .namelist import NamelistConfig
 from  . import preprocess as pre
 from  . import postprocess as post
 from .config import CONFIG
