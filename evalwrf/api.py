@@ -410,14 +410,14 @@ class ZAMGAPI:
         """
         Query stations based on state(s) with optional additional filtering.
         
-        Parameters:
+        Parameters
         -----------
         states : str or List[str]
             Single state or list of states to query
         expression : str, optional
             Additional pandas query expression for filtering
         
-        Returns:
+        Returns
         --------
         pd.DataFrame
             Filtered DataFrame of stations
@@ -446,13 +446,13 @@ class ZAMGAPI:
     
     def _converter(self, filename : str) -> pd.DataFrame:
         zamg_mapping = {
-            "ff":"Wind", #wind
-            "dd":"Wind direction", #windrichtung
-            "tl":"2m Temperature", #lufttemp
-            "rf":"Relative Humidity", #relative feuchte
-            "p":"Surface Pressure",  #luftdruck
+            "ff":"Wind",
+            "dd":"Wind direction",
+            "tl":"2m Temperature", 
+            "rf":"Relative Humidity", 
+            "p":"Surface Pressure", 
             "pred":"SLP Pressure",
-            "rr":"Precipitation (mm)"  #regen
+            "rr":"Precipitation (mm)" 
         }
         MISSING_CHAR = -888888
         df = pd.read_csv(filename)
@@ -482,13 +482,13 @@ class ZAMGAPI:
         df["p"] *= 100
         df = df.rename(columns=zamg_mapping)
 
-        df["FM-Code"] = "FM-12" # FM-35 oder FM-12 idk https://www2.mmm.ucar.edu/wrf/users/wrfda/OnlineTutorial/Help/littler.html#FM
+        df["FM-Code"] = "FM-12" # https://www2.mmm.ucar.edu/wrf/users/wrfda/OnlineTutorial/Help/littler.html#FM
         df["Source"] = "Geosphere Austria"
         df["Sequence number"] = df.index[::-1]
         df["Bogus"] = "F"
         df["ref_pres"] = MISSING_CHAR
-        # df["Unix Time"] = df["time"].astype(int) / 10**9
-        # df["Julian day"] = df["time"].apply(lambda t: t.to_julian_date()).astype(int)
+        df["Unix Time"] = df["time"].astype(int) / 10**9
+        df["Julian day"] = df["time"].apply(lambda t: t.to_julian_date()).astype(int)
         df["Date string"] = df["time"].dt.strftime('%Y%m%d%H%M%S')
         return df
 
@@ -591,7 +591,7 @@ class ZAMGAPI:
         
         is_sound_char = "F"
         QC_char = 0
-        # For surface obs, meas_count is 1, for soundings, it's the number of levels in the sounding (assuming each row is a level for sounding)
+        
         if not is_sound:
             meas_count = 1
         else:
