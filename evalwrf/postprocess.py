@@ -234,8 +234,6 @@ def cleandir(directory : str, datadir : str, trialrun : bool = True) -> None:
     >>> dir_where_data_is_saved = "grib2data"
     >>> cleandir(clean_sim_dir,dir_where_data_is_saved,trialrun=False)
     """
-    # curdir = Path(__file__)
-    # simdir = curdir.parent.parent / "simulation" / "wrf" / directory
     simdir = Path(directory)
 
     keep_files = [

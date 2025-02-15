@@ -347,8 +347,12 @@ class ZAMGAPI:
         self.request_url = ""
         self.timestamp_format = '%Y-%m-%dT%H:%M:%S.000Z'
 
-    def parameter(self, *p : str) -> None:
-        self.parameters.extend(p)
+    def parameter(self, *p : str | Literal["default"]) -> None:
+        """Type `default` if you want to add / use WRF FDDA OBS_DOMAIN properties"""
+        if p[0] == "default":
+            self.parameters.extend(self.wrf_fdda_properties)
+        else:
+            self.parameters.extend(p)
         return None
     
     def stations(self, *ids : int) -> None:
@@ -503,51 +507,6 @@ class ZAMGAPI:
         The OBS_DOMAIN format is a specific text-based format detailed in the WRF
         ObsNudging Guide (see references below).
 
-        The function performs the following steps:
-        1. **Data Loading and Preprocessing:**
-           - Calls the internal `_converter` method (``self._converter(filename)``) to load data
-             from the specified `filename` into a Pandas DataFrame.  It is assumed that
-             `_converter` returns a DataFrame with the necessary columns for OBS_DOMAIN format.
-           - Converts the 'ID' column in the DataFrame to string type.
-           - Sorts the DataFrame chronologically by the 'time' column to ensure proper time order
-             in the output file.
-
-        2. **OBS_DOMAIN File Writing:**
-           - Determines observation type parameters:
-             - `is_sound_char` is set to "F" (likely representing surface observation).
-             - `QC_char` (Quality Control character) is set to 0.
-             - `meas_count` (measurement count) is set to 1 for surface observations.
-               (Note: Sounding implementation is not yet available and will raise a `NotImplementedError`).
-           - Constructs the output filename using `output_filepath` and `domain_number`.
-           - Opens the output file for writing.
-           - Iterates through each row of the DataFrame and writes the data in the
-             OBS_DOMAIN format, including:
-             - Date and time string.
-             - Latitude and Longitude.
-             - Observation ID and Name.
-             - FM-Code, Source, Elevation, is_sound_char, Bogus flag, and meas_count.
-             - Surface data line with pressure, temperature, wind components (u, v),
-               relative humidity, surface pressure, and precipitation, along with QC flags
-               for each variable.  The variables are assumed to be in specific units
-               (e.g., Pressure in hPa, Temperature in Kelvin, wind components in m/s,
-               precipitation in mm).
-
-        3. **Output and Return:**
-           - Prints a message indicating the path to the created OBS_DOMAIN file.
-           - Returns `None`.
-
-        Note:
-           - This function currently only supports surface observations (`is_sound=False`).
-             Setting `is_sound=True` will raise a `NotImplementedError`.
-           - The function relies on the DataFrame returned by `self._converter` having
-             specific columns named: 'Date string', 'Latitude', 'Longitude', 'ID', 'Name',
-             'FM-Code', 'Source', 'Elevation', 'Bogus', 'SLP Pressure', 'ref_pres',
-             't2m_K', 'u', 'v', 'Relative Humidity', 'Surface Pressure', 'Precipitation (mm)'.
-             Ensure your input data and `_converter` method produce a DataFrame with these columns
-             and in the expected units for WRF ObsNudging.
-           - The output file format is fixed-width, as required by the OBS_DOMAIN format.
-           - Progress of row processing is displayed using `tqdm`.
-
         Parameters
         ----------
         filename : str
@@ -576,6 +535,22 @@ class ZAMGAPI:
         NotImplementedError
             If `is_sound` is set to `True`, as sounding observation conversion is not
             currently implemented.
+
+        Example
+        -------
+        >>> api = ew.ZAMGAPI(type="station",mode="historical",resource="klima-v2-10min")
+        >>> api.metadata()
+        >>> api.download("klima-v2-10min_METADATA.json")
+        ... 
+        >>> stations, paras = api.load_metadata("klima-v2-10min_METADATA.json")
+        >>> available_stations = api.get_available_stations("Steiermark") 
+        >>> api.parameter(*api.wrf_fdda_properties)
+        >>> api.timeframe(start="2024-06-01 00:00:00", end="2024-06-10 18:00:00")
+        >>> api.stations(*available_stations.index)
+        >>> api.compile()
+        >>> api.download("Steiermark_2024-06-01_2024-06-10_FDDA.csv")
+        >>> api.to_obsdomain("Steiermark_2024-06-01_2024-06-10_FDDA.csv",domain_number=3)
+
 
         References
         ----------
