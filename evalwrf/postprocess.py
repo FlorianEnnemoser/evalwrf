@@ -174,7 +174,7 @@ def plotting_simple(dataarray : xr.DataArray,
                     title : str = "",
                     cbartitle : str = "",
                     second_dataarray : Optional[xr.DataArray] = None,
-                    custom_config : Optional[dict] = None,
+                    custom_config : Optional[dict] = CONFIG,
                     **plt_kwargs):
     proj = ccrs.PlateCarree()
 
