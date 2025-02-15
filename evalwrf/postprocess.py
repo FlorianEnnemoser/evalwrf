@@ -34,15 +34,6 @@ def update_plot_layout(
 ):
     """
     Update Plotly Express figure layout with background image and colors
-    
-    :param fig: Plotly Express figure
-    :param image_path: Path to background image
-    :param opacity: Image opacity
-    :param background_color: Main background color
-    :param secondary_background_color: Plot area background color
-    :param font_family: Font family to use
-    :param font_size: Base font size    
-    :return: Updated figure
     """
     fig.update_layout(
         paper_bgcolor=background_color,

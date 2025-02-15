@@ -1,7 +1,5 @@
 import numpy as np
 from dataclasses import dataclass
-# https://www2.mmm.ucar.edu/wrf/users/wrfda/OnlineTutorial/Help/littler.html
-# https://pypi.org/project/fortranformat/
 
 @dataclass
 class Consts:
