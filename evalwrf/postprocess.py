@@ -1,5 +1,6 @@
 import glob
 import os
+from typing import Optional
 import matplotlib.pyplot as plt
 import xarray as xr
 import numpy as np
@@ -12,55 +13,6 @@ import geopandas as gpd
 from matplotlib.colors import ListedColormap
 from .config import CONFIG
 from PIL import Image
-
-radar_cmap = ListedColormap(np.array([[4,233,231],
-                    [1,159,244], [3,0,244],
-                    [2,253,2], [1,197,1],
-                    [0,142,0], [253,248,2],
-                    [229,188,0], [253,149,0],
-                    [253,0,0], [212,0,0],
-                    [188,0,0],[248,0,253],
-                    [152,84,198]], np.float32) / 255.0)
-
-
-def update_plot_layout(
-    fig, 
-    image_path=None, 
-    opacity=0.5, 
-    background_color='white', 
-    secondary_background_color='lightgray',
-    font_family='Arial',
-    font_size=12
-):
-    """
-    Update Plotly Express figure layout with background image and colors
-    """
-    fig.update_layout(
-        paper_bgcolor=background_color,
-        plot_bgcolor=secondary_background_color,
-        font=dict(
-            family=font_family,
-            size=font_size
-        )        
-    )
-    
-    if image_path:
-
-        fig.update_layout(
-            images=[{
-                'source': Image.open(image_path),
-                'xref': 'paper',
-                'yref': 'paper',
-                'x': 0,
-                'y': 1,
-                'sizex': 0.2,
-                'sizey': 0.2,
-                'opacity': opacity,
-                'layer': 'below'
-            }]
-        )
-    
-    return fig
 
 class createAnimation:
     def __init__(self, input_files,output_file):
@@ -144,7 +96,57 @@ def create_gif(image_files : str = "img/*.jpg", output_file : str = "animation",
 
 def create_video(image_files : str = "img/*.jpg", output_file : str = "animation", fps : int = 12):
     createAnimation(image_files, output_file).video(fps)
+
+
+radar_cmap = ListedColormap(np.array([[4,233,231],
+                    [1,159,244], [3,0,244],
+                    [2,253,2], [1,197,1],
+                    [0,142,0], [253,248,2],
+                    [229,188,0], [253,149,0],
+                    [253,0,0], [212,0,0],
+                    [188,0,0],[248,0,253],
+                    [152,84,198]], np.float32) / 255.0)
+
+
+def update_plot_layout(
+    fig, 
+    image_path=None, 
+    opacity=0.5, 
+    background_color='white', 
+    secondary_background_color='lightgray',
+    font_family='Arial',
+    font_size=12
+):
+    """
+    Update Plotly Express figure layout with background image and colors
+    """
+    fig.update_layout(
+        paper_bgcolor=background_color,
+        plot_bgcolor=secondary_background_color,
+        font=dict(
+            family=font_family,
+            size=font_size
+        )        
+    )
     
+    if image_path:
+
+        fig.update_layout(
+            images=[{
+                'source': Image.open(image_path),
+                'xref': 'paper',
+                'yref': 'paper',
+                'x': 0,
+                'y': 1,
+                'sizex': 0.2,
+                'sizey': 0.2,
+                'opacity': opacity,
+                'layer': 'below'
+            }]
+        )
+    
+    return fig
+
 def rename_wrfout_files(folder_path : str, testrun : bool = True, keep_files : list[str] = []) -> None:
     if testrun:
         print("-------- THIS IS A TESTRUN ----------")
@@ -172,7 +174,8 @@ def plotting_simple(dataarray : xr.DataArray,
                     cmap : str = "jet", 
                     title : str = "",
                     cbartitle : str = "",
-                    second_dataarray : xr.DataArray = None,
+                    second_dataarray : Optional[xr.DataArray] = None,
+                    custom_config : Optional[dict] = None,
                     **plt_kwargs):
     proj = ccrs.PlateCarree()
 
@@ -183,7 +186,7 @@ def plotting_simple(dataarray : xr.DataArray,
     austrian_states = gdf[gdf['adm0_a3'] == 'AUT']
     austrian_states.boundary.plot(ax=ax, edgecolor='k', linewidth=1)
 
-    bezirk = gpd.read_file(CONFIG["CUSTOM_BOUNDARYS"]["styria"],columns=["geometry","boundary"])
+    bezirk = gpd.read_file(custom_config,columns=["geometry","boundary"])
     bezirk.boundary.plot(ax=ax,edgecolor='k', lw=1)#,facecolor="none",zorder=99)
 
     ax.coastlines(resolution='10m', color='black', linestyle='-', lw=0.5)
