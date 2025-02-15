@@ -347,24 +347,24 @@ class ZAMGAPI:
         self.request_url = ""
         self.timestamp_format = '%Y-%m-%dT%H:%M:%S.000Z'
 
+    def parameter(self, *p : str) -> None:
+        self.parameters.extend(p)
+        return None
+    
+    def stations(self, *ids : int) -> None:
+        self.stationslist.extend(ids)
+        return None
+    
     def metadata(self) -> str:
         """sets request_url to metadata for given resource"""
         self.request_url = "/".join([self.dataset_url,"metadata"])
         self.output_format = "json"
         return self.request_url
-
-    def parameter(self, *p : str) -> None:
-        self.parameters.extend(p)
-        return None
     
     def timeframe(self, start : str = "2024-12-01 00:00:00", end : str = "2024-12-02 00:00:00") -> None:
         dt_start = pd.to_datetime(start).strftime(self.timestamp_format)
         dt_end = pd.to_datetime(end).strftime(self.timestamp_format)
         self.time = f"start={dt_start}&end={dt_end}&"
-        return None
-
-    def stations(self, *ids : int) -> None:
-        self.stationslist.extend(ids)
         return None
 
     def compile(self) -> str:
@@ -378,7 +378,7 @@ class ZAMGAPI:
                            f"output_format={self.output_format}"
         return self.request_url
     
-    def download(self,filename: str, schwimmflügerl : bool = True):
+    def download(self,filename: str, schwimmflügerl : bool = True) -> None:
         if schwimmflügerl:
             really_download = input("Start download? [y/n] ")
             if really_download != "y":
@@ -390,6 +390,7 @@ class ZAMGAPI:
         with open(self.full_filename, "wb") as f:
             f.write(response.content)
         print("finished downloading")
+        return None
         
     def load_metadata(self, filename : str = "") -> Tuple[pd.DataFrame,pd.DataFrame]:
         """Returns `stations` dataframe and `parameters` dataframe as a tuple"""
@@ -626,6 +627,7 @@ class ZAMGAPI:
 
     @property
     def wrf_fdda_properties(self) -> list:
+        """https://www2.mmm.ucar.edu/wrf/users/docs/ObsNudgingGuide.pdf"""
         return ["ff","dd","tl","rf","p","pred","rr"]
 
     @property
