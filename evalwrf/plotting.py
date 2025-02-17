@@ -53,7 +53,6 @@ class createAnimation:
                  save_all=True, duration=dur, loop=loops)
         print("saved gif from images!")
 
-
     def video(self,fps=30):
         """
         create a video out of files located in folder+file given by
@@ -72,12 +71,7 @@ class createAnimation:
 
         """
         print("############\nCreating Video\n############")
-
-        try:
-            import cv2
-        except:
-            print("ERROR Loading cv2, try installing opencv \
-                  by: pip install opencv-python")
+        import cv2
         
         frame = cv2.imread(self.input_files[0])
         height, width, layers = frame.shape

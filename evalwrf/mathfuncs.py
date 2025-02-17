@@ -20,8 +20,9 @@ class Consts:
 def saturation_water_vapor_pressure(T : float) -> float:
     """
     https://en.wikipedia.org/wiki/Vapour_pressure_of_water > August-Roche-Magnus 
+    Returns float in Pascal [Pa]
     """
-    return 0.61094*np.exp(17.625*T / (T+243.04)) * 1e3 # (Pa)
+    return 0.61094*np.exp(17.625*T / (T+243.04)) * 1e3
 
 def saturation_vapor_density(T : float, molecular_weight : float = 18.) -> float:
     """Ideal Gas law with 18 as molecular weight for water (in g/mol)"""
@@ -38,3 +39,10 @@ def v_from_vector(magnitude : float, degree : float) -> float:
 def slp_from_station_pressure(pressure : float, elevation : float, temperature : float) -> float:
     H = Consts.Rd * temperature / Consts.g
     return pressure * np.exp(elevation/H)
+
+def _meter2lat(meter : float) -> float:
+    """https://stackoverflow.com/questions/1253499/simple-calculations-for-working-with-lat-lon-and-km-distance"""
+    return meter/(110.574*1e3)
+
+def _meter2lon(meter : float, lat : float) -> float:
+    return meter/(111.32*1e3*np.cos(np.deg2rad(lat)))

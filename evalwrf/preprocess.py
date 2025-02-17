@@ -3,6 +3,9 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 import numpy as np
 import cartopy.io.shapereader as shpreader
+import xarray as xr
+import pandas as pd
+from .mathfuncs import _meter2lat, _meter2lon
 
 def parse_namelist_wps(file_path):
     """
@@ -32,13 +35,6 @@ def parse_namelist_wps(file_path):
                 domain[name] = values
 
     return domain
-
-def _meter2lat(meter : float) -> float:
-    """https://stackoverflow.com/questions/1253499/simple-calculations-for-working-with-lat-lon-and-km-distance"""
-    return meter/(110.574*1e3)
-
-def _meter2lon(meter : float, lat : float) -> float:
-    return meter/(111.32*1e3*np.cos(np.deg2rad(lat)))
 
 def compute_grid(domain):
     grids = []
@@ -84,8 +80,8 @@ def compute_grid(domain):
             width = _meter2lon((e_we - 1) * dx,start_lat)
             height = _meter2lat((e_sn - 1) * dy)
 
-            center_lat = start_lat + height/2.  #/ 111e3
-            center_lon = start_lon + width/2. # / 111e3
+            center_lat = start_lat + height/2. 
+            center_lon = start_lon + width/2. 
 
         grid_spacing_lon = _meter2lon(dx,center_lat)
         grid_spacing_lat = _meter2lat(dy)
@@ -110,9 +106,6 @@ def plot_grids(domain, grids, plot_grid : bool = True):
 
     rivers = cfeature.NaturalEarthFeature('physical', 'rivers_lake_centerlines', '50m',
                                         edgecolor='blue', facecolor='none')
-    # physical_labels = cfeature.NaturalEarthFeature('physical', 'geography_regions_polys', '10m',
-    #                                     edgecolor='red', facecolor='none')
-    # ax.add_feature(physical_labels, linewidth=0.5)
     ax.add_feature(rivers, linewidth=0.5)
     ax.add_feature(cfeature.LAKES, edgecolor='blue', facecolor='lightblue', alpha=0.5)
 
@@ -160,3 +153,21 @@ def from_namelist(namelist_wps_path : str = "namelist.wps") -> None:
     grids = compute_grid(domain_info)
     plot_grids(domain_info,grids,plot_grid=True)
 
+def wrf_to_xr(ds : str, ds_input : str) -> xr.Dataset:
+    ds_data = xr.open_dataset(ds)
+    ds_coords = xr.open_dataset(ds_input)
+
+    time_ = [t.values.astype(str) for t in ds_data["Times"]]
+    time_ = pd.to_datetime([str(i).replace("_"," ") for i in time_])
+    ds_wrf_timedim = ds_data.rename({"Time":"time"})
+    ds_wrf_timecoord = ds_wrf_timedim.assign(time=time_)
+    ds_wrf_dropped_Times = ds_wrf_timecoord.drop_vars('Times')
+
+    ds_wrf_w_latlon = ds_wrf_dropped_Times.assign_coords(
+    lat=ds_coords.coords['XLAT'].squeeze('Time'),
+    lon=ds_coords.coords['XLONG'].squeeze('Time'),
+    landmask=ds_coords.LANDMASK.squeeze('Time'),
+    lakemask=ds_coords.LAKEMASK.squeeze('Time'))
+    ds_wrf_rename_latlon = ds_wrf_w_latlon.rename({'south_north':'y', 'west_east':'x'})
+    ds_wrf_cf = ds_wrf_rename_latlon.drop_vars(['XLAT', 'XLONG', 'XTIME','XLAT_U','XLONG_U','XLAT_V','XLONG_V'])  #['XLAT', 'XLONG']
+    return ds_wrf_cf
