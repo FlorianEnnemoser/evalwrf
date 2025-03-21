@@ -10,7 +10,7 @@ import cartopy.feature as cfeature
 from cartopy.io.shapereader import natural_earth
 import geopandas as gpd
 from matplotlib.colors import ListedColormap
-from .config import CONFIG
+#from .config import CONFIG
 from PIL import Image
 
 class createAnimation:
@@ -168,7 +168,7 @@ def plotting_simple(dataarray : xr.DataArray,
                     title : str = "",
                     cbartitle : str = "",
                     second_dataarray : Optional[xr.DataArray] = None,
-                    custom_config : Optional[dict] = CONFIG,
+                    #custom_config : Optional[dict] = CONFIG,
                     **plt_kwargs):
     proj = ccrs.PlateCarree()
 
@@ -179,8 +179,8 @@ def plotting_simple(dataarray : xr.DataArray,
     austrian_states = gdf[gdf['adm0_a3'] == 'AUT']
     austrian_states.boundary.plot(ax=ax, edgecolor='k', linewidth=1)
 
-    bezirk = gpd.read_file(custom_config,columns=["geometry","boundary"])
-    bezirk.boundary.plot(ax=ax,edgecolor='k', lw=1)#,facecolor="none",zorder=99)
+    # bezirk = gpd.read_file(custom_config,columns=["geometry","boundary"])
+    # bezirk.boundary.plot(ax=ax,edgecolor='k', lw=1)#,facecolor="none",zorder=99)
 
     ax.coastlines(resolution='10m', color='black', linestyle='-', lw=0.5)
     ax.add_feature(cfeature.BORDERS.with_scale("10m"), lw=0.5)    

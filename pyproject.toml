@@ -15,9 +15,12 @@ dependencies = [
     "netcdf4>=1.7.2",
     "numpy>=2.2.3",
     "opencv-python>=4.11.0.86",
+    "plotly>=6.0.0",
+    "rasterio>=1.4.3",
     "xarray>=2025.1.2",
 ]
 
 [build-system]
 requires = ["setuptools>=42"]
 build-backend = "setuptools.build_meta"
+
