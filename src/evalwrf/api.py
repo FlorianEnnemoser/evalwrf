@@ -7,7 +7,6 @@ import time as t
 from dataclasses import dataclass, field
 import pandas as pd
 import numpy as np
-from itertools import product
 from tqdm import tqdm
 from . import mathfuncs as mf
 
