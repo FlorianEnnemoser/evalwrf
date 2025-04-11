@@ -1,2 +1,7 @@
 [CUSTOM_BOUNDARYS]
-styria = "C:\\custom_path\\to\\folder\\not\\file"
+my_boundaries = "C:\\custom_path\\to\\folder\\not\\file"
+
+[WINDTURBINE]
+ATTRIBUTE_COLS = ["Hub Height (m)","Diameter (m)","Standing Thrust Coeffcient","Power (MW)"]
+DATA_COLS = ["wind_speed_ms-1","thrust_coeff","power_produktion_kW"]
+LOCATION_COLS = ["Latitude","Longitude","Index Value"]

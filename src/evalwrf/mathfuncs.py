@@ -46,3 +46,11 @@ def _meter2lat(meter : float) -> float:
 
 def _meter2lon(meter : float, lat : float) -> float:
     return meter/(111.32*1e3*np.cos(np.deg2rad(lat)))
+
+def convert_DDM_to_float(tude: str) -> float:
+    multiplier = 1 if tude[-1] in ['N', 'E'] else -1
+    return multiplier * sum(float(x) / 60 ** n for n, x in enumerate(tude[:-1].split('-')))
+
+def logistic_model(x, x0, k, max_val):
+    denominator = 1 + np.exp(-k*(x-x0))
+    return max_val / denominator

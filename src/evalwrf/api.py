@@ -486,7 +486,7 @@ class ZAMGAPI:
         df["p"] *= 100
         df = df.rename(columns=zamg_mapping)
 
-        df["FM-Code"] = "FM-12" # https://www2.mmm.ucar.edu/wrf/users/wrfda/OnlineTutorial/Help/littler.html#FM
+        df["FM-Code"] = "FM-15" # https://www2.mmm.ucar.edu/wrf/users/wrfda/OnlineTutorial/Help/littler.html#FM 
         df["Source"] = "Geosphere Austria"
         df["Sequence number"] = df.index[::-1]
         df["Bogus"] = "F"
@@ -496,7 +496,7 @@ class ZAMGAPI:
         df["Date string"] = df["time"].dt.strftime('%Y%m%d%H%M%S')
         return df
 
-    def to_obsdomain(self,filename : str, domain_number : int, output_filepath = "OBS_DOMAIN", is_sound=False):
+    def to_obsdomain(self,filename : str, domain_number : int, output_filepath = "OBS_DOMAIN", is_sound=False, dropna : bool = False):
         """
         Converts a Pandas DataFrame to the OBS_DOMAIN format for WRF ObsNudging.
 
@@ -561,6 +561,8 @@ class ZAMGAPI:
         df = self._converter(filename)
         df["ID"] = df["ID"].astype(str)
         
+        if dropna:
+            df = df.dropna(subset=["u","v","t2m_K"])
         #ensure chronological order:
         df = df.sort_values(by="time",ignore_index=True)
         

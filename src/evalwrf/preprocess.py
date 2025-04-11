@@ -1,3 +1,4 @@
+from pathlib import Path
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
@@ -6,6 +7,7 @@ import cartopy.io.shapereader as shpreader
 import xarray as xr
 import pandas as pd
 from .mathfuncs import _meter2lat, _meter2lon
+from .config import CONFIG
 
 def parse_namelist_wps(file_path):
     """
@@ -171,3 +173,101 @@ def wrf_to_xr(ds : str, ds_input : str) -> xr.Dataset:
     ds_wrf_rename_latlon = ds_wrf_w_latlon.rename({'south_north':'y', 'west_east':'x'})
     ds_wrf_cf = ds_wrf_rename_latlon.drop_vars(['XLAT', 'XLONG', 'XTIME','XLAT_U','XLONG_U','XLAT_V','XLONG_V'])  #['XLAT', 'XLONG']
     return ds_wrf_cf
+
+def read_windturbine_file(filename='windturbines.tbl') -> pd.DataFrame:
+    """
+    https://github.com/wrf-model/WRF/blob/master/doc/README.windturbine
+
+    ### Interpretation of ct:
+        * Tells you how much of the wind’s momentum is extracted by the turbine.
+        * A higher ct means more force on the turbine, which can increase wake effects and loading on the structure.
+    
+    """
+
+    wind_speed = []
+    thrust_coefficient = []
+    power_production = []
+
+    with open(filename, 'r') as f:
+        for i,line in enumerate(f):
+            if i == 0:
+                max_lines = int(line.strip())
+
+            if i > max_lines+1:
+                print(f"more lines than max lines! exiting file at entry {max_lines}!")
+                break
+            
+            parts = line.strip().split()
+            parts = [float(p) for p in parts]
+
+            if i == 1: 
+                wind_turbine = dict(zip(CONFIG["WINDTURBINE"]["ATTRIBUTE_COLS"],parts))
+
+            if i > 1:
+                wind_speed.append(parts[0])
+                thrust_coefficient.append(parts[1])
+                power_production.append(parts[2])
+            
+
+        turbines = pd.DataFrame({"wind_speed_ms-1":wind_speed,"thrust_coeff":thrust_coefficient,"power_produktion_kW":power_production})
+        turbines.attrs = wind_turbine
+        return turbines
+    
+def to_windturbine(df : pd.DataFrame, filename="wind-turbine-XXX.tbl") -> None:
+    if not filename.split(".")[-1].endswith("tbl"):
+        raise ValueError("File must end with `.tbl`!")
+    
+    _req_columns = ["wind_speed_ms-1","thrust_coeff","power_produktion_kW"]
+    if not df.columns.isin(_req_columns).all() or len(df.columns) != len(_req_columns):
+        raise ValueError(f"Provide required columns {_req_columns} and remove potentially unused columns!")
+
+    _req_header_info = CONFIG["WINDTURBINE"]["ATTRIBUTE_COLS"]
+    header = [str(df.attrs.get(c)) for c in _req_header_info]
+    if len(header) != len(_req_header_info):
+        raise ValueError(f"Missing data in dataframe attrs! Provide all of: {_req_header_info}")
+
+    if Path(filename).is_file():
+        raise ValueError("File already exists!")
+    
+    df.to_csv(filename,sep=" ",index=False,header=False)
+
+    with open(filename, 'r') as f:
+        content = f.read()
+
+    max_lines_line = str(df.index.size)
+    turbine_attributes_line = " ".join(header)
+    header_info = [max_lines_line,turbine_attributes_line]
+    with open(filename, 'w') as f:
+        for line in header_info:
+            f.write(line + '\n')
+        f.write(content)
+    return None
+
+def create_windfarm_locations(df : pd.DataFrame, filename : str = "windturbines.txt") -> None:
+    """
+    Example `pd.DataFrame`:
+    >>> df = pd.DataFrame(
+        [
+            {"Latitude":convert("46-52-07.2N"),"Longitude":convert("15-00-32.8E"),"Index Value":1},
+            {"Latitude":convert("46-52-21.1N"),"Longitude":convert("15-00-32.9E"),"Index Value":1},
+            {"Latitude":convert("46-52-29.1N"),"Longitude":convert("15-00-26.8E"),"Index Value":1},
+            {"Latitude":convert("46-52-40.2N"),"Longitude":convert("15-00-25.3E"),"Index Value":1},
+            {"Latitude":convert("46-52-48.9N"),"Longitude":convert("15-00-15.4E"),"Index Value":1},
+            {"Latitude":convert("46-52-57.4N"),"Longitude":convert("15-00-06.4E"),"Index Value":1},
+            {"Latitude":convert("46-53-06.1N"),"Longitude":convert("14-59-56.7E"),"Index Value":2},
+            {"Latitude":convert("46-53-14.3N"),"Longitude":convert("14-59-47.5E"),"Index Value":2},
+         ]
+    )    
+    >>> ew.pre.reate_windfarm_locations(df, filename="windturbines_XXX.txt")
+    """
+
+    if filename != "windturbines.txt":
+        print("WARNING: WRF always needs the windfarm locations file to be named 'windturbines.txt'!")
+
+    _req_columns = CONFIG["WINDTURBINE"]["LOCATION_COLS"]
+    if not df.columns.isin(_req_columns).all() or len(df.columns) != len(_req_columns):
+        raise ValueError(f"Provide required columns {_req_columns} and remove potentially unused columns!")
+
+    df.to_csv(filename,sep=" ",index=False,header=False)
+    return None
+
