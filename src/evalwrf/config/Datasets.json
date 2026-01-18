@@ -1,0 +1,443 @@
+{
+    "/grid/historical/apolis_short-v1-1d-100m": {
+        "type": "grid",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "netcdf"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/grid/historical/apolis_short-v1-1d-100m"
+    },
+    "/timeseries/historical/apolis_short-v1-1d-100m": {
+        "type": "timeseries",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "csv"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/timeseries/historical/apolis_short-v1-1d-100m"
+    },
+    "/station/historical/histalp-v1-1y": {
+        "type": "station",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "csv"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/station/historical/histalp-v1-1y"
+    },
+    "/grid/historical/inca-v1-1h-1km": {
+        "type": "grid",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "netcdf"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/grid/historical/inca-v1-1h-1km"
+    },
+    "/timeseries/historical/inca-v1-1h-1km": {
+        "type": "timeseries",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "csv"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/timeseries/historical/inca-v1-1h-1km"
+    },
+    "/grid/forecast/nowcast-v1-15min-1km": {
+        "type": "grid",
+        "mode": "forecast",
+        "response_formats": [
+            "geojson",
+            "netcdf"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/grid/forecast/nowcast-v1-15min-1km"
+    },
+    "/timeseries/forecast/nowcast-v1-15min-1km": {
+        "type": "timeseries",
+        "mode": "forecast",
+        "response_formats": [
+            "geojson",
+            "csv"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/timeseries/forecast/nowcast-v1-15min-1km"
+    },
+    "/grid/forecast/nwp-v1-1h-2500m": {
+        "type": "grid",
+        "mode": "forecast",
+        "response_formats": [
+            "geojson",
+            "netcdf"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/grid/forecast/nwp-v1-1h-2500m"
+    },
+    "/timeseries/forecast/nwp-v1-1h-2500m": {
+        "type": "timeseries",
+        "mode": "forecast",
+        "response_formats": [
+            "geojson",
+            "csv"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/timeseries/forecast/nwp-v1-1h-2500m"
+    },
+    "/grid/historical/snowgrid_cl-v2-1d-1km": {
+        "type": "grid",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "netcdf"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/grid/historical/snowgrid_cl-v2-1d-1km"
+    },
+    "/timeseries/historical/snowgrid_cl-v2-1d-1km": {
+        "type": "timeseries",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "csv"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/timeseries/historical/snowgrid_cl-v2-1d-1km"
+    },
+    "/grid/historical/spartacus-v1-1d-1km": {
+        "type": "grid",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "netcdf"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/grid/historical/spartacus-v1-1d-1km"
+    },
+    "/grid/historical/spartacus-v2-1d-1km": {
+        "type": "grid",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "netcdf"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/grid/historical/spartacus-v2-1d-1km"
+    },
+    "/timeseries/historical/spartacus-v2-1d-1km": {
+        "type": "timeseries",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "csv"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/timeseries/historical/spartacus-v2-1d-1km"
+    },
+    "/timeseries/historical/spartacus-v1-1d-1km": {
+        "type": "timeseries",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "csv"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/timeseries/historical/spartacus-v1-1d-1km"
+    },
+    "/grid/historical/spartacus-v1-1m-1km": {
+        "type": "grid",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "netcdf"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/grid/historical/spartacus-v1-1m-1km"
+    },
+    "/grid/historical/spartacus-v2-1m-1km": {
+        "type": "grid",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "netcdf"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/grid/historical/spartacus-v2-1m-1km"
+    },
+    "/timeseries/historical/spartacus-v2-1m-1km": {
+        "type": "timeseries",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "csv"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/timeseries/historical/spartacus-v2-1m-1km"
+    },
+    "/timeseries/historical/spartacus-v1-1m-1km": {
+        "type": "timeseries",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "csv"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/timeseries/historical/spartacus-v1-1m-1km"
+    },
+    "/grid/historical/spartacus-v2-1q-1km": {
+        "type": "grid",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "netcdf"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/grid/historical/spartacus-v2-1q-1km"
+    },
+    "/timeseries/historical/spartacus-v2-1q-1km": {
+        "type": "timeseries",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "csv"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/timeseries/historical/spartacus-v2-1q-1km"
+    },
+    "/grid/historical/spartacus-v2-1y-1km": {
+        "type": "grid",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "netcdf"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/grid/historical/spartacus-v2-1y-1km"
+    },
+    "/timeseries/historical/spartacus-v2-1y-1km": {
+        "type": "timeseries",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "csv"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/timeseries/historical/spartacus-v2-1y-1km"
+    },
+    "/grid/historical/winfore-v1-1d-1km": {
+        "type": "grid",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "netcdf"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/grid/historical/winfore-v1-1d-1km"
+    },
+    "/grid/historical/winfore-v2-1d-1km": {
+        "type": "grid",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "netcdf"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/grid/historical/winfore-v2-1d-1km"
+    },
+    "/timeseries/historical/winfore-v2-1d-1km": {
+        "type": "timeseries",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "csv"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/timeseries/historical/winfore-v2-1d-1km"
+    },
+    "/timeseries/historical/winfore-v1-1d-1km": {
+        "type": "timeseries",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "csv"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/timeseries/historical/winfore-v1-1d-1km"
+    },
+    "/station/historical/klima-v1-1d": {
+        "type": "station",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "csv"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v1-1d"
+    },
+    "/station/historical/klima-v1-1h": {
+        "type": "station",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "csv"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v1-1h"
+    },
+    "/station/historical/klima-v1-1m": {
+        "type": "station",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "csv"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v1-1m"
+    },
+    "/station/historical/klima-v1-10min": {
+        "type": "station",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "csv"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v1-10min"
+    },
+    "/station/historical/klima-v2-1d": {
+        "type": "station",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "csv"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v2-1d"
+    },
+    "/station/historical/klima-v2-1h": {
+        "type": "station",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "csv"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v2-1h"
+    },
+    "/station/historical/klima-v2-1m": {
+        "type": "station",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "csv"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v2-1m"
+    },
+    "/station/historical/klima-v2-10min": {
+        "type": "station",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "csv"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v2-10min"
+    },
+    "/station/historical/klima-v2-1y": {
+        "type": "station",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "csv"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/station/historical/klima-v2-1y"
+    },
+    "/station/historical/tawes-v1-10min": {
+        "type": "station",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "csv"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/station/historical/tawes-v1-10min"
+    },
+    "/station/current/tawes-v1-10min": {
+        "type": "station",
+        "mode": "current",
+        "response_formats": [
+            "geojson",
+            "csv"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/station/current/tawes-v1-10min"
+    },
+    "/station/historical/synop-v1-1h": {
+        "type": "station",
+        "mode": "historical",
+        "response_formats": [
+            "geojson",
+            "csv"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/station/historical/synop-v1-1h"
+    },
+    "/grid/forecast/chem-v1-1h-12km": {
+        "type": "grid",
+        "mode": "forecast",
+        "response_formats": [
+            "geojson",
+            "netcdf"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/grid/forecast/chem-v1-1h-12km"
+    },
+    "/timeseries/forecast/chem-v1-1h-12km": {
+        "type": "timeseries",
+        "mode": "forecast",
+        "response_formats": [
+            "geojson",
+            "csv"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/timeseries/forecast/chem-v1-1h-12km"
+    },
+    "/grid/forecast/chem-v1-1h-4km": {
+        "type": "grid",
+        "mode": "forecast",
+        "response_formats": [
+            "geojson",
+            "netcdf"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/grid/forecast/chem-v1-1h-4km"
+    },
+    "/timeseries/forecast/chem-v1-1h-4km": {
+        "type": "timeseries",
+        "mode": "forecast",
+        "response_formats": [
+            "geojson",
+            "csv"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/timeseries/forecast/chem-v1-1h-4km"
+    },
+    "/grid/forecast/chem-v2-1h-9km": {
+        "type": "grid",
+        "mode": "forecast",
+        "response_formats": [
+            "geojson",
+            "netcdf"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/grid/forecast/chem-v2-1h-9km"
+    },
+    "/timeseries/forecast/chem-v2-1h-9km": {
+        "type": "timeseries",
+        "mode": "forecast",
+        "response_formats": [
+            "geojson",
+            "csv"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/timeseries/forecast/chem-v2-1h-9km"
+    },
+    "/grid/forecast/chem-v2-1h-3km": {
+        "type": "grid",
+        "mode": "forecast",
+        "response_formats": [
+            "geojson",
+            "netcdf"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/grid/forecast/chem-v2-1h-3km"
+    },
+    "/timeseries/forecast/chem-v2-1h-3km": {
+        "type": "timeseries",
+        "mode": "forecast",
+        "response_formats": [
+            "geojson",
+            "csv"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/timeseries/forecast/chem-v2-1h-3km"
+    },
+    "/grid/forecast/ensemble-v1-1h-2500m": {
+        "type": "grid",
+        "mode": "forecast",
+        "response_formats": [
+            "geojson",
+            "netcdf"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/grid/forecast/ensemble-v1-1h-2500m"
+    },
+    "/timeseries/forecast/ensemble-v1-1h-2500m": {
+        "type": "timeseries",
+        "mode": "forecast",
+        "response_formats": [
+            "geojson",
+            "csv"
+        ],
+        "url": "https://dataset.api.hub.geosphere.at/v1/timeseries/forecast/ensemble-v1-1h-2500m"
+    }
+}

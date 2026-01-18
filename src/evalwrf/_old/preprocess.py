@@ -159,4 +159,3 @@ def from_namelist(namelist_wps_path : str = "namelist.wps") -> None:
     domain_info = parse_namelist_wps(namelist_wps_path)
     grids = compute_grid(domain_info)
     plot_grids(domain_info,grids,plot_grid=True)
-
