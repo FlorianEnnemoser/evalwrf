@@ -1,7 +1,7 @@
 from typing import Literal
 import pandas as pd
-from api import load_metadata
 import xarray as xr
+from .api import load_metadata
 
 
 def load_dataset_from_csv(

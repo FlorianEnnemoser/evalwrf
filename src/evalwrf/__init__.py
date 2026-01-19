@@ -1,6 +1,12 @@
-from plotting import timeseries_station
-from api import load_url_from_resource, save_csv, load_metadata
-from data import load_dataset_from_csv
+from importlib.metadata import version
+
+__version__ = version("evalwrf")
+
+from .plotting import timeseries_station
+from .api import load_url_from_resource, save_csv, load_metadata
+from .data import load_dataset_from_csv
+
+
 
 # API_RESOURCE = "klima-v2-10min"
 # url = load_url_from_resource("Datasets.json", API_RESOURCE)
