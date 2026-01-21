@@ -82,3 +82,6 @@ html_theme_options = {
     # # VERSION SWITCHING: https://pydata-sphinx-theme.readthedocs.io/en/v0.8.1/user_guide/configuring.html#add-a-json-file-to-define-your-switcher-s-versions
 
 }
+
+
+# CREATE DOC: uv run sphinx-build -M html docs/source docs/build
