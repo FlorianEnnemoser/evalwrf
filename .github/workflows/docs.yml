@@ -24,11 +24,10 @@ jobs:
       
       - name: Install dependencies
         run: |
-          uv sync --group doc
+          uv sync --all-extras --group doc
       - name: Sphinx build
         run: |
-          cd docs
-          uv run make html ./source ./build
+          uv run sphinx-build -M html docs/source docs/build
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         if: github.ref == 'refs/heads/main'

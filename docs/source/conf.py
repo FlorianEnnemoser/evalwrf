@@ -84,4 +84,6 @@ html_theme_options = {
 }
 
 
-# CREATE DOC: uv run sphinx-build -M html docs/source docs/build
+# CREATE DOC: 
+# uv sync --all-extras --group doc
+# uv run sphinx-build -M html docs/source docs/build
