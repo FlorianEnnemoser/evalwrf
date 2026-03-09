@@ -1,4 +1,4 @@
-# 🌦️ evalwrf
+# evalwrf
 
 ```python
 import evalwrf as ew
