@@ -190,7 +190,7 @@ import evalwrf as ew
 
 ##  Configuration (WIP)
 
-Project settings are managed via `config/default.yaml`:
+Project settings are managed via a `.toml` file:
 
 ```toml
 [IO]
@@ -206,6 +206,7 @@ Override config programmatically:
 ```python
 import evalwrf as ew
 
+ew.load_config("my_config.toml")
 ew.config.set("io.input", "abc")
 ```
 
