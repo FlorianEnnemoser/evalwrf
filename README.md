@@ -6,7 +6,7 @@ import evalwrf as ew
 
 > _evalwrf_ is a toolkit for pre- and postprocessing WRF (Weather Research and Forecasting Model) data, featuring intuitive plotting utilities and a GeoSphere Austria API integration.
 
-[![Python](https://img.shields.io/badge/Python-3.9%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/Python-3.12%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 <!-- [![Status](https://img.shields.io/badge/status-active-brightgreen)]() -->
 
@@ -22,16 +22,17 @@ import evalwrf as ew
 - [Postprocessing](#postprocessing)
 - [Plotting](#plotting)
 - [GeoSphere Austria API](#geosphere-austria-api)
-<!-- - [Configuration](#configuration)
-- [Examples](#examples) -->
 - [Contributing](#contributing)
 - [License](#license)
+
+<!-- - [Configuration](#configuration)
+- [Examples](#examples) -->
 
 ---
 
 ## Overview
 
-**WRF-Tools** is a data science toolkit designed to simplify workflows around the [WRF model](https://www.mmm.ucar.edu/models/wrf/). It provides modular, scriptable utilities for:
+**evalwrf** is a data science toolkit designed to simplify workflows around the [WRF model](https://www.mmm.ucar.edu/models/wrf/). It provides modular, scriptable utilities for:
 
 - **Preprocessing** WRF input data (domain setup, namelist generation, initial/boundary conditions)
 - **Postprocessing** WRF output (variable extraction, unit conversion, regridding)
