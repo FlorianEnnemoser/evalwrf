@@ -1,11 +1,13 @@
 from typing import Literal
 import pandas as pd
 import xarray as xr
-from .api import load_metadata
+from .geosphere_interface import load_metadata
 
 
 def load_dataset_from_csv(
-    filename: str, configfile: str, na_action: Literal["drop", "raise", "ignore"] = "drop"
+    filename: str,
+    configfile: str,
+    na_action: Literal["drop", "raise", "ignore"] = "drop",
 ) -> xr.Dataset:
     df = pd.read_csv(filename)
     if na_action == "drop":
@@ -25,5 +27,7 @@ def load_dataset_from_csv(
     para_meta = load_metadata(configfile, record="parameters")
     for var in df.data_vars:
         df[var].attrs = para_meta.loc[var, :].to_dict()
-        df[var].attrs["label"] = df[var].attrs["long_name"] + " " + f"({df[var].attrs['unit']})"
+        df[var].attrs["label"] = (
+            df[var].attrs["long_name"] + " " + f"({df[var].attrs['unit']})"
+        )
     return df
