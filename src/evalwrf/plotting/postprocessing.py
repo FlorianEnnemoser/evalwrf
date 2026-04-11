@@ -14,9 +14,19 @@ import cartopy.feature as cfeature
 plt.rcParams["font.family"] = "Courier New"
 
 
+def centerpoint_extend(center_lat: float, center_lon: float, extend: float) -> list:
+    left = center_lon - extend / 2
+    right = center_lon + extend / 2
+    lower = center_lat - extend / 2
+    upper = center_lat + extend / 2
+    return [left, right, lower, upper]
+
+
 def plot_field(
     da: xr.DataArray,
-    timestep: int = 0,
+    lat: str = "lat",
+    lon: str = "lon",
+    title: str | None = None,
     levels: int | str = 10,
     cmap: str = "jet",
     extent: list[float] = [9.0, 17.5, 46.0, 49.1],
@@ -29,8 +39,8 @@ def plot_field(
     ----------
     da : xr.DataArray
         Input data array with coordinates (lon, lat, time).
-    timestep : int, optional
-        Time index to plot (default: 0, first timestep).
+    timestep : dict[str,int]
+        Time index to plot. Use the time coordinate / dimension with the desired index.
     levels : int | str, optional
         Colorbar levels. If int, creates `levels` equally-spaced levels from min to max.
         If str, parsed as "start:stop:step" (e.g., "0:10:2" → [0, 2, 4, 6, 8, 10]).
@@ -59,6 +69,9 @@ def plot_field(
     if not isinstance(da, xr.DataArray):
         raise ValueError("Only for dataarrays not datasets!")
 
+    if da.ndim > 2:
+        raise ValueError("Only 2D Data plotable! Select only one timestamp?")
+
     fontstyle_cfg = dict(size=10, color="k", rotation=0, ha="center")
     gridline_cfg = dict(
         draw_labels=["left", "bottom"], linewidth=0.7, color="dimgray", linestyle=":"
@@ -70,20 +83,12 @@ def plot_field(
     else:
         level_array = np.linspace(da.values.min(), da.values.max(), levels + 1)
 
-    time_val = "2000-01-01"
-    da_t = da.copy()
-
-    for pt in ["Time", "time"]:
-        if pt in da.dims:
-            da_t = da.isel({pt: timestep})
-            time_val = da_t.time.values
-            break
-        elif pt in da.coords:
-            time_val = da.coords[pt].values
-            break
-    del da
-
-    time_str = pd.Timestamp(time_val).strftime("%Y-%m-%d %H:%M UTC")
+    if "Time" in da.dims:
+        time_str = pd.to_datetime(da.Time.values).strftime("%d-%m-%Y %H:%M") + " UTC"
+    elif title:
+        time_str = title
+    else:
+        time_str = "No Time"
 
     fig = plt.figure(figsize=figsize)
     ax = fig.add_subplot(frameon=False, projection=ccrs.Robinson(central_longitude=0))
@@ -94,9 +99,9 @@ def plot_field(
     N_COLORS = 256
     norm = mcolors.BoundaryNorm(level_array, ncolors=N_COLORS)
     im = ax.pcolormesh(
-        da_t.lon,
-        da_t.lat,
-        da_t,
+        da[lon],
+        da[lat],
+        da,
         transform=ccrs.PlateCarree(),
         cmap=cmap,
         norm=norm,
@@ -114,14 +119,14 @@ def plot_field(
     cbar_y_pos = pos.y0 - 0.1
     cax = fig.add_axes([pos.x0, cbar_y_pos, pos.width, CBAR_THICKNESS])
 
-    long_name = da_t.attrs.get("long_name", False)
-    unit = da_t.attrs.get("units", False)
+    long_name = da.attrs.get("long_name", False)
+    unit = da.attrs.get("units", False)
     if long_name and unit:
         cbar_label = f"{long_name} in {unit}"
     else:
         cbar_label = ""
 
-    if not (da_t == 0).all(None):
+    if not (da == 0).all(None):
         cb = fig.colorbar(im, cax=cax, orientation="horizontal", ticks=level_array)
         cb.set_label(label=cbar_label)
 

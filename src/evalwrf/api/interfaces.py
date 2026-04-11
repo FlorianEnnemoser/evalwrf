@@ -6,7 +6,7 @@ from itertools import product
 from pathlib import Path
 from typing import ClassVar, List, Literal, Self
 
-from .helpers import create_folder, load_json, save_data_stream
+from ..utils.helpers import create_folder, load_json, save_data_stream
 
 import httpx
 import numpy as np
@@ -14,12 +14,6 @@ import pandas as pd
 
 
 MetaData = namedtuple("MetaData", field_names=["stations", "parameters"])
-
-try:
-    import cdsapi
-except ImportError as e:
-    cdsapi = None  #: ``None`` when ``cdsapi`` is not installed.
-    print(e, "\nInstall `cdsapi` in order to use ERA5 dataset!")
 
 
 class URL(httpx.URL):
@@ -38,7 +32,7 @@ class URL(httpx.URL):
     URL('https://example.com/api/v1/datasets/klima/metadata')
     """
 
-    def __truediv__(self, other: str | List[str]) -> "URL":
+    def __truediv__(self, other: str | List[str]) -> Self:
         """Append one or more path segments to this URL.
 
         Parameters
@@ -537,11 +531,6 @@ class ERA5API(BaseAPI):
 
     def __post_init__(self) -> None:
         """Initialise default pressure-level and surface CDS request templates."""
-        if cdsapi is None:
-            raise ImportError(
-                "cdsapi is required for ERA5API. Install it with: pip install cdsapi"
-            )
-
         self.pressure_dataset: str = "reanalysis-era5-pressure-levels"
         self.surface_dataset: str = "reanalysis-era5-single-levels"
 
@@ -809,6 +798,7 @@ class ERA5API(BaseAPI):
         >>> era5 = ERA5API(daterange="2022-03-13|2022-03-15", grid_size="0p25")
         >>> era5.download(bottom=20, top=45, left=35, right=70, as_test=True)
         """
+        import cdsapi
 
         self._update_area(bottom, top, left, right)
         self._update_time(

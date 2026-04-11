@@ -45,10 +45,3 @@ def save_data_stream(response: Response, filename: str) -> None:
         for chunk in tqdm(response.iter_bytes(), ascii=True, desc=f"Saving {filename}"):
             f.write(chunk)
     return None
-
-
-def convert(tude: str):
-    multiplier = 1 if tude[-1] in ["N", "E"] else -1
-    return multiplier * sum(
-        float(x) / 60**n for n, x in enumerate(tude[:-1].split("-"))
-    )

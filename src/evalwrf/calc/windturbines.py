@@ -161,3 +161,69 @@ def save_tbl():
             df=data, filename=f"wind-turbine-{data.attrs['Index Value']}.tbl"
         )
     return None
+
+
+# def get_turbine_energy_yield(
+#     turbine_table: str, u: np.ndarray, dt: float = None, as_timeseries: bool = True
+# ) -> np.ndarray:
+#     """
+#     https://doi.org/10.1016/j.energy.2022.124362 Eq. 4, pdf page 6
+
+#     energy of the wind turbine in kwH during the sample interval
+
+#     turbine_table : turbine table from .tbl file
+#     u : windspeed at hub height
+#     dt : sampling interval in parts per minute
+#     (eg.: if data is sampled every 10 minutes, then dt is 1/6 min, so 0.1666). Default is 0.25 (15min)
+#     as_timeseries: if every timestep should be returned or only the sum (as Eq. 4 of the paper dictates)
+
+#     Returns
+#     ---------
+#     float | np.ndarray : Energy in kWh
+#     """
+#     df = pd.read_table(
+#         turbine_table, sep=" ", skiprows=2, names=["windspeed", "thrust coeff", "power"]
+#     )  # power in kW
+
+#     if dt is None:
+#         dt = np.mean(np.diff(u.Time)) / np.timedelta64(1, "h")
+
+#     ts = np.interp(u, df["windspeed"], df["power"]) * dt
+
+#     if as_timeseries:
+#         return ts
+#     else:
+#         return np.sum(ts)
+
+
+# def get_capacity_factor(
+#     power: np.ndarray, turbine_table: str, dt: float = 0.25
+# ) -> float:
+#     """
+#     rated_power aus .tbl file ist im header der vierte Parameter (in MW!)
+#     dt : sampling interval in parts per minute
+#     (eg.: if data is sampled every 10 minutes, then dt is 1/6 min, so 0.1666). Default is 0.25 (15min)
+
+#     nt*dt bedeutet effektiv die Gesamtstundenanzahl die die Turbine in Betrieb ist.
+#     """
+#     df = pd.read_table(
+#         turbine_table,
+#         sep=" ",
+#         skiprows=1,
+#         nrows=1,
+#         names=["hubheight", "diameter", "standingTC", "nominalpower"],
+#     )
+#     rated_power = df.at[0, "nominalpower"] * 1000  # MW to kW
+
+#     ef = np.sum(power)
+#     nt = power.size
+#     return ef / (rated_power * nt * dt)
+
+
+# def get_point_data(data, latitude: float, longitude: float) -> dict:
+#     """
+#     Holt sich die Koordinatenpunkte von laitude und longitude aus dem netcdf file (data == wrfin).
+#     """
+#     return dict(
+#         zip(["south_north", "west_east"], ll_to_xy(data, latitude, longitude).values)
+#     )

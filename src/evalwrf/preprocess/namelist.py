@@ -1,9 +1,9 @@
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Union
+import numpy as np
+
+from ..calc import _meter2lat, _meter2lon
 
 
 @dataclass
@@ -120,16 +120,16 @@ class Namelist:
     ref_lat: float
     ref_lon: float
 
-    dx: Union[int, list] = field(default=27000)
-    dy: Union[int, list] = field(default=27000)
-    e_we: Union[int, list] = field(default=91)
-    e_sn: Union[int, list] = field(default=100)
+    dx: int | list = field(default=27000)
+    dy: int | list = field(default=27000)
+    e_we: int | list = field(default=91)
+    e_sn: int | list = field(default=100)
     max_dom: int = field(default=1)
 
-    i_parent_start: Union[int, list] = field(default=1)
-    j_parent_start: Union[int, list] = field(default=1)
-    parent_id: Union[int, list] = field(default=1)
-    parent_grid_ratio: Union[int, list] = field(default=1)
+    i_parent_start: int | list = field(default=1)
+    j_parent_start: int | list = field(default=1)
+    parent_id: int | list = field(default=1)
+    parent_grid_ratio: int | list = field(default=1)
 
     map_proj: str = field(default="lambert")
     truelat1: float = field(default=30.0)
@@ -155,10 +155,6 @@ class Namelist:
         self._end_dt = datetime.strptime(self.end_date, "%Y-%m-%d")
 
         self._validate()
-
-    # ------------------------------------------------------------------
-    # Validation
-    # ------------------------------------------------------------------
 
     def _validate(self) -> None:
         if self.max_dom > 3:
@@ -202,10 +198,6 @@ class Namelist:
                         f"'{name}' has length {len(value)}, expected {self.max_dom}."
                     )
 
-    # ------------------------------------------------------------------
-    # Formatting helpers
-    # ------------------------------------------------------------------
-
     def _fmt_field(self, value) -> str:
         """Render a scalar or list as a Fortran namelist value string."""
         if isinstance(value, list):
@@ -219,10 +211,6 @@ class Namelist:
     def _fmt_val_list(self, value) -> str:
         """Repeat a scalar value ``max_dom`` times: ``v, v, ...``"""
         return ", ".join(str(value) for _ in range(self.max_dom))
-
-    # ------------------------------------------------------------------
-    # Interop dict for preprocess.compute_grid()
-    # ------------------------------------------------------------------
 
     def _as_wps_dict(self) -> dict:
         """Return a dict mirroring the output of ``parse_namelist_wps()``.
@@ -255,10 +243,6 @@ class Namelist:
             "i_parent_start": _to_list(self.i_parent_start),
             "j_parent_start": _to_list(self.j_parent_start),
         }
-
-    # ------------------------------------------------------------------
-    # Text generators
-    # ------------------------------------------------------------------
 
     def _generate_wps(self) -> str:
         """Render the full ``namelist.wps`` content."""
@@ -423,11 +407,7 @@ class Namelist:
 /
 """
 
-    # ------------------------------------------------------------------
-    # Public API
-    # ------------------------------------------------------------------
-
-    def write_wps(self, path: Union[str, Path] = "namelist.wps") -> None:
+    def write_wps(self, path: str = "namelist.wps") -> None:
         """Write the WPS namelist to *path*.
 
         Parameters
@@ -438,7 +418,7 @@ class Namelist:
         Path(path).write_text(self._generate_wps(), encoding="utf-8")
         return None
 
-    def write_input(self, path: Union[str, Path] = "namelist.input") -> None:
+    def write_input(self, path: str = "namelist.input") -> None:
         """Write the WRF input namelist to *path*.
 
         Parameters
@@ -472,3 +452,152 @@ class Namelist:
         domain = self._as_wps_dict()
         grids = preprocess.compute_grid(domain)
         return preprocess.plot_grids(domain, grids, plot_grid=plot_grid)
+
+
+def parse_namelist_wps(path: str) -> dict:
+    """Parse a ``namelist.wps`` file into a flat key-to-values dictionary.
+
+    Section headers (``&name``, ``/``) and inline comments (``!``) are
+    stripped.  Each parameter key maps to a list of stripped string values,
+    matching the multi-value convention used by WRF namelists.
+
+    Parameters
+    ----------
+    path : str or Path
+        Path to the ``namelist.wps`` file.
+
+    Returns
+    -------
+    dict of str -> list of str
+        Each WPS namelist key maps to a list of stripped string values.
+
+    Examples
+    --------
+    >>> domain = parse_namelist_wps("namelist.wps")
+    >>> domain["max_dom"]
+    ['1']
+    >>> domain["e_we"]
+    ['91']
+    """
+    domain = {}
+    with Path(path).open("r") as f:
+        for line in f:
+            line = line.split("!")[0].strip()
+            if line.startswith("/") or line.startswith("&") or not line:
+                continue
+            if "=" in line:
+                name, _, raw_values = line.partition("=")
+                name = name.strip()
+                values = [
+                    v.strip().strip("'").strip('"')
+                    for v in raw_values.split(",")
+                    if v.strip()
+                ]
+                domain[name] = values
+    return domain
+
+
+def compute_grid(domain: dict) -> list:
+    """Compute lat/lon arrays for every WRF domain.
+
+    Parameters
+    ----------
+    domain : dict of str -> list of str
+        Parsed WPS namelist dictionary as returned by
+        :func:`parse_namelist_wps` (or :meth:`Namelist._as_wps_dict`).
+
+    Returns
+    -------
+    list of dict
+        One dict per domain with keys:
+
+        ``"lons"`` : numpy.ndarray
+            1-D array of longitude values (degrees East) along the west-east
+            axis.
+        ``"lats"`` : numpy.ndarray
+            1-D array of latitude values (degrees North) along the south-north
+            axis.
+        ``"center_lat"`` : float
+            Domain centre latitude.
+        ``"center_lon"`` : float
+            Domain centre longitude.
+        ``"dx"`` : float
+            Effective west-east grid spacing in metres.
+        ``"dy"`` : float
+            Effective south-north grid spacing in metres.
+
+    Raises
+    ------
+    ValueError
+        If any domain's ``e_we`` or ``e_sn`` does not satisfy the WRF nesting
+        criterion ``(N - 1) % parent_grid_ratio == 0``.
+    """
+    grids = []
+
+    for i in range(int(domain["max_dom"][0])):
+        parent_grid_ratio = int(domain["parent_grid_ratio"][i])
+        if i <= 1:
+            dx = int(domain["dx"][0]) / parent_grid_ratio
+            dy = int(domain["dy"][0]) / parent_grid_ratio
+        else:
+            dx = int(domain["dx"][0]) / (parent_grid_ratio * (i + 1))
+            dy = int(domain["dy"][0]) / (parent_grid_ratio * (i + 1))
+
+        ref_lat = float(domain["ref_lat"][0])
+        ref_lon = float(domain["ref_lon"][0])
+        e_we = int(domain["e_we"][i])
+        e_sn = int(domain["e_sn"][i])
+
+        if (e_we - 1) % parent_grid_ratio != 0:
+            min_n = (e_we - 1) // parent_grid_ratio
+            suggested_e_we = [
+                (n * parent_grid_ratio + 1) for n in range(min_n, min_n + 5)
+            ]
+            raise ValueError(
+                f"Domain {i + 1}: e_we={e_we} does not satisfy the nesting criterion. Try: {suggested_e_we}"
+            )
+        if (e_sn - 1) % parent_grid_ratio != 0:
+            min_n = (e_sn - 1) // parent_grid_ratio
+            suggested_e_sn = [
+                (n * parent_grid_ratio + 1) for n in range(min_n, min_n + 5)
+            ]
+            raise ValueError(
+                f"Domain {i + 1}: e_sn={e_sn} does not satisfy the nesting criterion. Try: {suggested_e_sn}"
+            )
+
+        if i == 0:
+            center_lat = ref_lat
+            center_lon = ref_lon
+
+            i_start = j_start = 0
+        else:
+            parent_index = int(domain["parent_id"][i]) - 1
+
+            i_start = int(domain["i_parent_start"][i])
+            j_start = int(domain["j_parent_start"][i])
+
+            start_lat = grids[parent_index]["lats"][j_start]
+            start_lon = grids[parent_index]["lons"][i_start]
+
+            width = _meter2lon((e_we - 1) * dx, start_lat)
+            height = _meter2lat((e_sn - 1) * dy)
+
+            center_lat = start_lat + height / 2.0  # / 111e3
+            center_lon = start_lon + width / 2.0  # / 111e3
+
+        grid_spacing_lon = _meter2lon(dx, center_lat)
+        grid_spacing_lat = _meter2lat(dy)
+
+        lons = center_lon + (np.arange(e_we) - e_we / 2) * grid_spacing_lon
+        lats = center_lat + (np.arange(e_sn) - e_sn / 2) * grid_spacing_lat
+        grids.append(
+            {
+                "lons": lons,
+                "lats": lats,
+                "center_lat": center_lat,
+                "center_lon": center_lon,
+                "dx": dx,
+                "dy": dy,
+            }
+        )
+    return grids

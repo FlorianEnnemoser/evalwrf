@@ -456,10 +456,6 @@ class LittleRConverter:
         end = self._build_end_record()
         return header + data + end
 
-    # ------------------------------------------------------------------
-    # Public API
-    # ------------------------------------------------------------------
-
     def convert(self, output_path: Union[str, Path]) -> None:
         """Convert the CSV file to LITTLE_R format and write to *output_path*.
 

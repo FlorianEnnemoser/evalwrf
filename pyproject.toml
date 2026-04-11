@@ -1,7 +1,5 @@
 [project]
-authors = [
-    {name="Florian Ennemoser"}
-    ]
+authors = [{ name = "Florian Ennemoser" }]
 
 name = "evalwrf"
 version = "0.1.0"
@@ -11,27 +9,28 @@ requires-python = ">=3.12"
 
 dependencies = [
     "bottleneck>=1.6.0",
+    "colormaps>=0.4.2",
+    # # "numpy==1.26.4",        # for wrf-python
+    # # "scipy>=1.15.0",        # for wrf-python
+    # "xarray==0.14.1",       # for wrf-python
     "cartopy>=0.25.0",
     "cdsapi>=0.7.7",
-    "colormaps>=0.4.2",
-    "dask>=2025.12.0",
+    "dask>=2026.3.0",
     "fortranformat>=2.0.3",
     "geopandas>=1.1.3",
     "httpx>=0.28.1",
     "matplotlib>=3.10.8",
-    "netcdf4>=1.7.3",
-    "numpy>=2.4.0",
+    "netcdf4>=1.7.4",
+    "numpy>=1.26.4",
     "pandas>=2.3.3",
-    "scipy>=1.16.3",
-    "tqdm>=4.67.1",
-    "xarray>=2025.12.0",
+    "tqdm>=4.67.3",
+    "xarray>=2026.2.0",
+    "scipy>=1.17.1",
 ]
 
+
 [dependency-groups]
-dev = [
-    "ipykernel>=7.1.0",
-    "pytest>=9.0.2",
-]
+dev = ["ipykernel>=7.1.0", "pytest>=9.0.2"]
 doc = [
     "pydata-sphinx-theme>=0.16.1",
     "sphinx>=9.1.0",
@@ -45,10 +44,11 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.uv]
-cache-keys = [{ file = "pyproject.toml" }, { git = { commit = true, tags = true } }]
+cache-keys = [
+    { file = "pyproject.toml" },
+    { git = { commit = true, tags = true } },
+]
 
 [tool.pytest.ini_options]
 pythonpath = "src"
-addopts = [
-    "--import-mode=importlib",
-]
+addopts = ["--import-mode=importlib"]
